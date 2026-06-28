@@ -142,10 +142,14 @@ if "log_msg" not in st.session_state:
     st.session_state.log_msg = ""
 if "timer_seconds" not in st.session_state:
     st.session_state.timer_seconds = 10
+if "scouted_count" not in st.session_state:
+    st.session_state.scouted_count = 0
+if "scouted_players" not in st.session_state:
+    st.session_state.scouted_players = set()
 
 # --- APP HEADER ---
 st.title("🏏 IPL 100-Player Live Clock Auction")
-st.markdown("Choose your team, start with **₹150.00 CR**, and bid before the **10-second timer** hits zero!")
+st.markdown("Choose your team, start with **₹150.00 CR**, and outbid the live bots before the timer ends!")
 st.divider()
 
 # --- STAGE 1: SETUP & TEAM SELECTION ---
@@ -180,9 +184,11 @@ if st.session_state.game_stage == "setup":
         st.session_state.game_stage = "auction"
         st.session_state.auction_index = 0
         st.session_state.timer_seconds = 10
+        st.session_state.scouted_count = 0
+        st.session_state.scouted_players = set()
         st.rerun()
 
-# --- STAGE 2: LIVE AUCTION ROOM WITH TIMER ---
+# --- STAGE 2: LIVE AUCTION ROOM ---
 elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
@@ -199,45 +205,68 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 10
             st.session_state.log_msg = f"Next up: {player['name']}! Base price set at ₹{player['base_price']/100:.2f} CR."
 
-        # --- TIMER ENGINE ---
-        # Forces the browser tab to refresh every 1000 milliseconds (1 second)
+        # --- LIVE AUTOREFRESH CLOCK POLLING ---
         st_autorefresh(interval=1000, key="auction_timer")
         
         st.header("🔨 Live Auction Room")
         
-        # Display the countdown clock visually
+        # --- ACTIVE REAL-TIME BOT BIDDING LOOP ---
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
-            st.warning(f"⏳ Time Remaining: **{st.session_state.timer_seconds + 1} seconds**")
-            st.progress(st.session_state.timer_seconds / 10)
+            
+            bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
+            if bots and random.random() < 0.40:
+                valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
+                if valid_bots:
+                    counter_bot = random.choice(valid_bots)
+                    st.session_state.current_bid += 50
+                    st.session_state.highest_bidder = counter_bot
+                    st.session_state.timer_seconds = 10  
+                    st.session_state.log_msg = f"🤖 LIVE INTERVENTION: {counter_bot['team_name']} raised the bid to ₹{st.session_state.current_bid/100:.2f} CR!"
+                    st.rerun()
         else:
-            # TIME HAS RUN OUT! Auto-sell player to the current leader
             if st.session_state.highest_bidder:
                 hb = st.session_state.highest_bidder
                 for t in st.session_state.teams:
                     if t["team_name"] == hb["team_name"]:
                         t["purse"] -= st.session_state.current_bid
                         t["squad"].append(player)
-                st.error(f"🔴 GONE! Hammer falls! {player['name']} SOLD to {hb['team_name']} for ₹{st.session_state.current_bid/100:.2f} CR!")
-            else:
-                st.error(f"🔴 UNSOLD! Time ran out and no one bid for {player['name']}.")
             
-            # Reset clock variables for next player card
-            time.sleep(2) # Give users a brief moment to read the sale alert banner
             st.session_state.auction_index += 1
             st.session_state.current_bid = 0
             st.session_state.highest_bidder = None
             st.session_state.timer_seconds = 10
             st.rerun()
 
-        # Display Player Info & Price Metrics
+        # Render visual UI components
+        st.warning(f"⏳ Time Remaining: **{st.session_state.timer_seconds + 1} seconds**")
+        st.progress(st.session_state.timer_seconds / 10)
+
+        # Player stats layout
         st.info(f"**Player ({idx+1}/100):** {player['name']} | **Role:** {player['role']} | **Skill OVR:** {player['rating']}")
+        
+        # --- SCOUTING RADAR INTERFACE (Max 30 players) ---
+        # Formula: Reasonable price scales based on base price plus player form ranking calculation
+        reasonable_val = int(player["base_price"] * (player["rating"] / 80.0))
+        
+        col_scout1, col_scout2 = st.columns([2, 1])
+        with col_scout1:
+            if player["name"] in st.session_state.scouted_players:
+                st.success(f"📊 **Scouting Report Valuation:** ₹{reasonable_val/100:.2f} CR is a reasonable price limit.")
+            else:
+                if st.session_state.scouted_count < 30:
+                    if st.button(f"🔍 Scan Fair Market Value ({30 - st.session_state.scouted_count} Left)", use_container_width=True):
+                        st.session_state.scouted_players.add(player["name"])
+                        st.session_state.scouted_count += 1
+                        st.rerun()
+                else:
+                    st.error("🔒 Scouting Radar Locked: You have exhausted your 30 player analytical maximum limit!")
+
         st.metric(label="Current High Bid", value=f"₹{st.session_state.current_bid/100:.2f} CR", 
                   delta=f"Held by: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'None'}")
         
         st.caption(st.session_state.log_msg)
         
-        # Bidding Buttons Interactivity
         human_teams = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
         human_options = [t["team_name"] for t in human_teams]
         
@@ -248,35 +277,16 @@ elif st.session_state.game_stage == "auction":
                 if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
                     st.session_state.current_bid += 50
                     st.session_state.highest_bidder = next(t for t in st.session_state.teams if t["team_name"] == bidding_manager)
-                    st.session_state.timer_seconds = 10  # RESET TIMER!
+                    st.session_state.timer_seconds = 10  
                     st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
-                    
-                    # Bot counter mechanics check
-                    bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-                    if bots and random.random() > 0.35:
-                        counter_bot = random.choice(bots)
-                        st.session_state.current_bid += 50
-                        st.session_state.highest_bidder = counter_bot
-                        st.session_state.timer_seconds = 10  # RESET TIMER AGAIN!
-                        st.session_state.log_msg = f"🤖 {counter_bot['team_name']} instantly countered with ₹{st.session_state.current_bid/100:.2f} CR!"
                     st.rerun()
             else:
-                st.write("No humans can afford this player.")
+                st.write("No humans can afford this price.")
                 
         with col2:
             st.write("---")
-            if st.button("Skip / Let Bots Battle Out", type="secondary", use_container_width=True):
-                # Immediate bot-vs-bot simulation step to speed up passing cards
-                if st.session_state.highest_bidder is None:
-                    bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= st.session_state.current_bid]
-                    for _ in range(random.randint(1, 6)):
-                        if bots and random.random() > 0.3:
-                            counter_bot = random.choice(bots)
-                            st.session_state.current_bid += 50
-                            st.session_state.highest_bidder = counter_bot
-                            bots = [t for t in bots if t["purse"] >= (st.session_state.current_bid + 50)]
-                        else: break
-                st.session_state.timer_seconds = 0 # Forces immediate checkout settlement on loop run
+            if st.button("Pass / Force Immediate Expiry", type="secondary", use_container_width=True):
+                st.session_state.timer_seconds = 0
                 st.rerun()
 
 # --- STAGE 3: DASHBOARD & SEASON SIMULATION ---
