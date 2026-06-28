@@ -122,7 +122,7 @@ def current_player():
 
 
 def max_bid_for_team(team):
-    personality = team["personality"] or {"min_value": 1.0}
+    personality = team["personality"] or {"min_value": 1.0, "max_squad": 9}
     squad_factor = 1 if len(team["squad"]) < personality.get("max_squad", 9) else 0.92
     return (
         max(team["budget"], 0) * MAX_BID_BUDGET_SHARE * squad_factor
@@ -280,13 +280,13 @@ def simulate_matchday():
         away_strength = strongest_available_players(away_team) + st.session_state.team_boosts.get(away_id, 0)
         home_score = home_strength + random.uniform(-MATCH_VARIANCE_RANGE, MATCH_VARIANCE_RANGE)
         away_score = away_strength + random.uniform(-MATCH_VARIANCE_RANGE, MATCH_VARIANCE_RANGE)
-        margin = abs(home_score - away_score)
         decided_in_super_over = False
         if abs(home_score - away_score) < SUPER_OVER_THRESHOLD:
             winner, loser = random.choice([(home_team, away_team), (away_team, home_team)])
-            margin = max(margin, random.uniform(0.5, 3.0))
+            margin = random.uniform(0.5, 3.0)
             decided_in_super_over = True
         else:
+            margin = abs(home_score - away_score)
             winner, loser = (home_team, away_team) if home_score > away_score else (away_team, home_team)
         st.session_state.standings[winner["id"]]["wins"] += 1
         st.session_state.standings[winner["id"]]["points"] += 2
