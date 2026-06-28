@@ -242,16 +242,22 @@ def get_reasonable_val(player, current_index):
 # --- LIVE ROSTER VIEW DIALOG POPUP ---
 @st.dialog("📋 Current Roster & Budget Review", width="medium")
 def view_teams_dialog():
-    st.write("Review team spending status and total player cards drafted so far:")
+    st.write("Review team spending status and compositional category balance:")
     for t in st.session_state.teams:
-        status_text = "⚠️ DISQUALIFIED" if len(t["squad"]) > 20 else ""
-        with st.expander(f"{t['team_name']} — Purse Left: ₹{t['purse']/100:.2f} CR {status_text}"):
-            st.write(f"**Total Signed:** {len(t['squad'])} players (Limit: 15-20)")
+        batsmen = len([p for p in t["squad"] if p["role"] == "Batsman"])
+        keepers = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+        all_rounders = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+        bowlers = len([p for p in t["squad"] if p["role"] == "Bowler"])
+        
+        status_text = "⚠️ SQUAD MISMATCH" if (batsmen < 5 or keepers < 2 or all_rounders < 3 or bowlers < 5) else ""
+        if len(t["squad"]) > 20: status_text = "⚠️ OVER SIGNED"
+            
+        with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR {status_text}"):
+            st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
+            st.write(f"🏏 Batsmen: {batsmen}/5 | 🧤 Keepers: {keepers}/2 | 🔀 All-Rounders: {all_rounders}/3 | 🎯 Bowlers: {bowlers}/5")
             if t['squad']:
-                names_list = [f"{p['name']} ({p['role']} - OVR {p['rating']})" for p in t['squad']]
+                names_list = [f"{p['name']} ({p['role']})" for p in t['squad']]
                 st.write(", ".join(names_list))
-            else:
-                st.caption("No players signed yet.")
 
 # --- SESSION STATE INITIALIZATION ---
 if "game_stage" not in st.session_state:
@@ -320,11 +326,18 @@ if st.session_state.game_stage == "setup":
 elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
-        st.success("All 200 players finished! Evaluating squad size rules...")
+        st.success("All 200 players finished! Evaluating precise composition rule checks...")
         
-        # --- SQUAD BRACKET VALIDATION (15 Min, 20 Max) ---
+        # --- PRECISE POSITIONAL SYSTEM CONTROLLER RULES VALIDATOR ---
         for t in st.session_state.teams:
-            if len(t["squad"]) < 15 or len(t["squad"]) > 20:
+            b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
+            wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+            ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+            bowl_count = len([p for p in t["squad"] if p["role"] == "Bowler"])
+            
+            # Disqualify if squad constraints or category baselines are missed
+            if (len(t["squad"]) < 15 or len(t["squad"]) > 20 or 
+                b_count < 5 or wk_count < 2 or ar_count < 3 or bowl_count < 5):
                 t["disqualified"] = True
                 t["points"] = -99  
         if st.button("Proceed to Lineup Selection"):
@@ -352,9 +365,7 @@ elif st.session_state.game_stage == "auction":
                 
                 bidders = []
                 for t in st.session_state.teams:
-                    # Defensive brake check: Bots/Proxies will not bid if it pushes them over 20 players
-                    if len(t["squad"]) >= 20:
-                        continue
+                    if len(t["squad"]) >= 20: continue
                         
                     is_target = curr_p["name"] in t.get("targets", [])
                     if t["is_human"]:
@@ -386,7 +397,6 @@ elif st.session_state.game_stage == "auction":
 
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
-            # Bots check: filter out teams with 20 or more players
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
             if bots and random.random() < 0.40:
                 valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
@@ -443,7 +453,6 @@ elif st.session_state.game_stage == "auction":
                   delta=f"Held by: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'None'}")
         st.caption(st.session_state.log_msg)
         
-        # Human bid blocker logic check: prevent raising if already carrying 20 players
         human_teams = [t for t in st.session_state.teams if t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
         human_options = [t["team_name"] for t in human_teams]
         
@@ -457,7 +466,7 @@ elif st.session_state.game_stage == "auction":
                     st.session_state.timer_seconds = 10  
                     st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
                     st.rerun()
-            else: st.write("No eligible humans can afford this player (or squad limit of 20 reached).")
+            else: st.write("No eligible humans can bid (squad full at 20 or wallet empty).")
         with col2:
             st.write("---")
             if st.button("Pass / Force Immediate Expiry", type="secondary", use_container_width=True):
@@ -467,9 +476,9 @@ elif st.session_state.game_stage == "auction":
 # --- STAGE 2.5: SQUAD & PLAYING 12 LOCK IN ---
 elif st.session_state.game_stage == "lineup":
     st.header("📋 Lineup Room: Select Your Playing 11 + Impact Sub")
-    st.markdown("Pick your starting line-up. Disqualified teams (under 15 or over 20 players total) are locked out.")
+    st.markdown("Pick your starting lineup. **Rule requirements:** 5 Batters, 2 Wicketkeepers, 3 All-Rounders, and 5 Bowlers must exist in your base squad layout.")
     
-    # Process AI Bot rosters automatically
+    # Process AI Bot rosters automatically with rule priorities
     for t in st.session_state.teams:
         if not t["is_human"] and not t["disqualified"]:
             sorted_squad = sorted(t["squad"], key=lambda x: x["rating"], reverse=True)
@@ -480,7 +489,7 @@ elif st.session_state.game_stage == "lineup":
     active_humans = [t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]]
     if active_humans:
         for t in active_humans:
-            st.subheader(f"Configure {t['team_name']} ({len(t['squad'])} players signed)")
+            st.subheader(f"Configure {t['team_name']}")
             player_names = [p["name"] for p in t["squad"]]
             
             p11_names = st.multiselect(f"Select Exactly 11 Starters for Playing XI:", options=player_names, key=f"p11_{t['team_name']}")
@@ -499,7 +508,7 @@ elif st.session_state.game_stage == "lineup":
             st.session_state.game_stage = "dashboard"
             st.rerun()
     else:
-        st.write("No qualified human teams left to select lines.")
+        st.write("No qualified human teams passed composition filtering checks.")
         if st.button("Proceed to Tournament Dashboard"):
             st.session_state.game_stage = "dashboard"
             st.rerun()
@@ -515,39 +524,47 @@ elif st.session_state.game_stage == "dashboard":
             if t["disqualified"]: 
                 st.markdown(f"❌ ~~**{t['team_name']}**~~")
             else: 
-                st.markdown(f"**{t['team_name']}** ({len(t['squad'])} total signed)")
+                st.markdown(f"**{t['team_name']}** ({len(t['squad'])} signed)")
         with col_p: 
             if t["disqualified"]: 
-                if len(t["squad"]) > 20:
-                    st.error(f"DISQUALIFIED ({len(t['squad'])} players - Max 20 allowed!)")
+                # Provide distinct feedback layout messages for DQ cause
+                b_c = len([p for p in t["squad"] if p["role"] == "Batsman"])
+                wk_c = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+                ar_c = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+                bo_c = len([p for p in t["squad"] if p["role"] == "Bowler"])
+                
+                if len(t["squad"]) < 15 or len(t["squad"]) > 20:
+                    st.error(f"DQ: Size Mismatch ({len(t['squad'])} players)")
                 else:
-                    st.error(f"DISQUALIFIED ({len(t['squad'])} players - Min 15 required!)")
+                    st.error(f"DQ: Comp Mismatch (Bat: {b_c}/5, WK: {wk_c}/2, AR: {ar_c}/3, Bowl: {bo_c}/5)")
             else: 
                 st.markdown(f"🏆 {t['points']} Pts")
         with col_w: 
-            st.caption(f"Wallet Left: ₹{t['purse']/100:.2f} CR")
+            st.caption(f"Wallet: ₹{t['purse']/100:.2f} CR")
             
     st.divider()
     
-    # --- END GAME OPTIONS: VIEW PLAYING 12 ROSTERS ---
+    # Roster Inspector Selection Option Box
     st.subheader("🔍 Roster Inspector: View Playing 12 Lineups")
-    selected_inspect_team = st.selectbox("Select a qualified franchise to review its locked squad:", 
-                                         options=[t["team_name"] for t in st.session_state.teams if not t["disqualified"]])
-    
-    if selected_inspect_team:
-        inspect_target = next(t for t in st.session_state.teams if t["team_name"] == selected_inspect_team)
+    qualified_options = [t["team_name"] for t in st.session_state.teams if not t["disqualified"]]
+    if qualified_options:
+        selected_inspect_team = st.selectbox("Select a qualified franchise to review its locked squad:", options=qualified_options)
         
-        col_xi, col_imp = st.columns(2)
-        with col_xi:
-            st.markdown("**🔒 Playing XI Starters:**")
-            for idx, p in enumerate(inspect_target["playing_11"]):
-                st.write(f"{idx+1}. {p['name']} ({p['role']} - OVR {p['rating']})")
-        with col_imp:
-            st.markdown("**🏏 Impact Sub:**")
-            if inspect_target["impact_player"]:
-                st.info(f"💥 {inspect_target['impact_player']['name']} ({inspect_target['impact_player']['role']} - OVR {inspect_target['impact_player']['rating']})")
-            else:
-                st.caption("No impact player designated.")
+        if selected_inspect_team:
+            inspect_target = next(t for t in st.session_state.teams if t["team_name"] == selected_inspect_team)
+            col_xi, col_imp = st.columns(2)
+            with col_xi:
+                st.markdown("**🔒 Playing XI Starters:**")
+                for idx, p in enumerate(inspect_target["playing_11"]):
+                    st.write(f"{idx+1}. {p['name']} ({p['role']} - OVR {p['rating']})")
+            with col_imp:
+                st.markdown("**🏏 Impact Sub:**")
+                if inspect_target["impact_player"]:
+                    st.info(f"💥 {inspect_target['impact_player']['name']} ({inspect_target['impact_player']['role']} - OVR {inspect_target['impact_player']['rating']})")
+                else:
+                    st.caption("No impact player designated.")
+    else:
+        st.caption("No teams qualified for the lineup phase.")
                 
     st.divider()
     active_squads = [t for t in st.session_state.teams if not t["disqualified"]]
