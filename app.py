@@ -228,7 +228,6 @@ if "player_pool" not in st.session_state:
     ]
 
 # --- FIXED VALUATION MAPPING ENGINE ---
-# Seed calculation ensures valuation is stable per player and never alters mid-second
 def get_reasonable_val(player, current_index):
     random.seed(current_index + 1000)
     if player["rating"] >= 93: val = random.randint(1350, 1650)
@@ -237,7 +236,7 @@ def get_reasonable_val(player, current_index):
     elif player["rating"] >= 83: val = random.randint(200, 500)
     elif player["rating"] >= 80: val = random.randint(80, 240)
     else: val = random.randint(20, 75)
-    random.seed() # reset global state
+    random.seed() 
     return val
 
 # --- LIVE ROSTER VIEW DIALOG POPUP ---
@@ -245,8 +244,9 @@ def get_reasonable_val(player, current_index):
 def view_teams_dialog():
     st.write("Review team spending status and total player cards drafted so far:")
     for t in st.session_state.teams:
-        with st.expander(f"{t['team_name']} — Purse Left: ₹{t['purse']/100:.2f} CR"):
-            st.write(f"**Total Signed:** {len(t['squad'])} players")
+        status_text = "⚠️ DISQUALIFIED" if len(t["squad"]) > 20 else ""
+        with st.expander(f"{t['team_name']} — Purse Left: ₹{t['purse']/100:.2f} CR {status_text}"):
+            st.write(f"**Total Signed:** {len(t['squad'])} players (Limit: 15-20)")
             if t['squad']:
                 names_list = [f"{p['name']} ({p['role']} - OVR {p['rating']})" for p in t['squad']]
                 st.write(", ".join(names_list))
@@ -321,8 +321,10 @@ elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
         st.success("All 200 players finished! Evaluating squad size rules...")
+        
+        # --- SQUAD BRACKET VALIDATION (15 Min, 20 Max) ---
         for t in st.session_state.teams:
-            if len(t["squad"]) < 15:
+            if len(t["squad"]) < 15 or len(t["squad"]) > 20:
                 t["disqualified"] = True
                 t["points"] = -99  
         if st.button("Proceed to Lineup Selection"):
@@ -350,6 +352,10 @@ elif st.session_state.game_stage == "auction":
                 
                 bidders = []
                 for t in st.session_state.teams:
+                    # Defensive brake check: Bots/Proxies will not bid if it pushes them over 20 players
+                    if len(t["squad"]) >= 20:
+                        continue
+                        
                     is_target = curr_p["name"] in t.get("targets", [])
                     if t["is_human"]:
                         max_limit = int(val * 1.15) if is_target else (int(val * 0.7) if len(t["squad"]) < 15 else 0)
@@ -368,7 +374,7 @@ elif st.session_state.game_stage == "auction":
                     winner_team["purse"] -= final_price
                     winner_team["squad"].append(curr_p)
                 else:
-                    capable_bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= curr_p["base_price"]]
+                    capable_bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= curr_p["base_price"]]
                     if capable_bots:
                         bot = random.choice(capable_bots)
                         bot["purse"] -= curr_p["base_price"]
@@ -380,7 +386,8 @@ elif st.session_state.game_stage == "auction":
 
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
-            bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
+            # Bots check: filter out teams with 20 or more players
+            bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
             if bots and random.random() < 0.40:
                 valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
                 smart_bidding_bots = []
@@ -403,7 +410,7 @@ elif st.session_state.game_stage == "auction":
                         t["purse"] -= st.session_state.current_bid
                         t["squad"].append(player)
             else:
-                capable_bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= player["base_price"]]
+                capable_bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= player["base_price"]]
                 if capable_bots:
                     assigned_bot = random.choice(capable_bots)
                     assigned_bot["purse"] -= player["base_price"]
@@ -436,7 +443,8 @@ elif st.session_state.game_stage == "auction":
                   delta=f"Held by: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'None'}")
         st.caption(st.session_state.log_msg)
         
-        human_teams = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
+        # Human bid blocker logic check: prevent raising if already carrying 20 players
+        human_teams = [t for t in st.session_state.teams if t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
         human_options = [t["team_name"] for t in human_teams]
         
         col1, col2 = st.columns(2)
@@ -449,7 +457,7 @@ elif st.session_state.game_stage == "auction":
                     st.session_state.timer_seconds = 10  
                     st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
                     st.rerun()
-            else: st.write("No humans can afford this player.")
+            else: st.write("No eligible humans can afford this player (or squad limit of 20 reached).")
         with col2:
             st.write("---")
             if st.button("Pass / Force Immediate Expiry", type="secondary", use_container_width=True):
@@ -459,7 +467,7 @@ elif st.session_state.game_stage == "auction":
 # --- STAGE 2.5: SQUAD & PLAYING 12 LOCK IN ---
 elif st.session_state.game_stage == "lineup":
     st.header("📋 Lineup Room: Select Your Playing 11 + Impact Sub")
-    st.markdown("Pick your starting line-up. Disqualified teams (under 15 players total) cannot select rosters.")
+    st.markdown("Pick your starting line-up. Disqualified teams (under 15 or over 20 players total) are locked out.")
     
     # Process AI Bot rosters automatically
     for t in st.session_state.teams:
@@ -472,7 +480,7 @@ elif st.session_state.game_stage == "lineup":
     active_humans = [t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]]
     if active_humans:
         for t in active_humans:
-            st.subheader(f"Configure {t['team_name']}")
+            st.subheader(f"Configure {t['team_name']} ({len(t['squad'])} players signed)")
             player_names = [p["name"] for p in t["squad"]]
             
             p11_names = st.multiselect(f"Select Exactly 11 Starters for Playing XI:", options=player_names, key=f"p11_{t['team_name']}")
@@ -504,14 +512,43 @@ elif st.session_state.game_stage == "dashboard":
     for t in sorted_teams:
         col_t, col_p, col_w = st.columns([2, 1, 1])
         with col_t: 
-            if t["disqualified"]: st.markdown(f"❌ ~~**{t['team_name']}**~~")
-            else: st.markdown(f"**{t['team_name']}** ({len(t['squad'])} total signed)")
+            if t["disqualified"]: 
+                st.markdown(f"❌ ~~**{t['team_name']}**~~")
+            else: 
+                st.markdown(f"**{t['team_name']}** ({len(t['squad'])} total signed)")
         with col_p: 
-            if t["disqualified"]: st.error("DISQUALIFIED")
-            else: st.markdown(f"🏆 {t['points']} Pts")
+            if t["disqualified"]: 
+                if len(t["squad"]) > 20:
+                    st.error(f"DISQUALIFIED ({len(t['squad'])} players - Max 20 allowed!)")
+                else:
+                    st.error(f"DISQUALIFIED ({len(t['squad'])} players - Min 15 required!)")
+            else: 
+                st.markdown(f"🏆 {t['points']} Pts")
         with col_w: 
             st.caption(f"Wallet Left: ₹{t['purse']/100:.2f} CR")
             
+    st.divider()
+    
+    # --- END GAME OPTIONS: VIEW PLAYING 12 ROSTERS ---
+    st.subheader("🔍 Roster Inspector: View Playing 12 Lineups")
+    selected_inspect_team = st.selectbox("Select a qualified franchise to review its locked squad:", 
+                                         options=[t["team_name"] for t in st.session_state.teams if not t["disqualified"]])
+    
+    if selected_inspect_team:
+        inspect_target = next(t for t in st.session_state.teams if t["team_name"] == selected_inspect_team)
+        
+        col_xi, col_imp = st.columns(2)
+        with col_xi:
+            st.markdown("**🔒 Playing XI Starters:**")
+            for idx, p in enumerate(inspect_target["playing_11"]):
+                st.write(f"{idx+1}. {p['name']} ({p['role']} - OVR {p['rating']})")
+        with col_imp:
+            st.markdown("**🏏 Impact Sub:**")
+            if inspect_target["impact_player"]:
+                st.info(f"💥 {inspect_target['impact_player']['name']} ({inspect_target['impact_player']['role']} - OVR {inspect_target['impact_player']['rating']})")
+            else:
+                st.caption("No impact player designated.")
+                
     st.divider()
     active_squads = [t for t in st.session_state.teams if not t["disqualified"]]
     
@@ -521,7 +558,6 @@ elif st.session_state.game_stage == "dashboard":
             for i in range(0, len(active_squads) - 1, 2):
                 t1, t2 = active_squads[i], active_squads[i+1]
                 
-                # Match calculation is computed exclusively using the 11 starters + impact player ratings!
                 t1_power = sum([p["rating"] for p in t1["playing_11"]]) + (t1["impact_player"]["rating"] if t1["impact_player"] else 0)
                 t2_power = sum([p["rating"] for p in t2["playing_11"]]) + (t2["impact_player"]["rating"] if t2["impact_player"] else 0)
                 
