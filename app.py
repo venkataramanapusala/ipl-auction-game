@@ -142,42 +142,51 @@ if "log_msg" not in st.session_state:
 
 # --- APP HEADER ---
 st.title("🏏 IPL 100-Player Auction Simulator")
-st.markdown("Build your 10-team league, outsmart specialized AI bots, and manage an elite 100-player roster!")
+st.markdown("Choose your team, start with **₹150.00 CR**, build your roster, and go for gold!")
 st.divider()
 
-# --- STAGE 1: SETUP SCREEN ---
+# --- STAGE 1: SETUP & TEAM SELECTION ---
 if st.session_state.game_stage == "setup":
-    st.header("👥 League Setup")
-    num_humans = st.slider("How many human players?", min_value=1, max_value=10, value=1)
+    st.header("👥 League Setup & Team Selection")
     
-    human_names = []
+    num_humans = st.slider("How many human players?", min_value=1, max_value=4, value=1)
+    
+    # Let each human player enter their name and pick a franchise team
+    human_configs = []
+    used_teams = []
+    
     for i in range(num_humans):
-        name = st.text_input(f"Enter Manager Name for Team {i+1}", value=f"Manager {i+1}", key=f"h_name_{i}")
-        human_names.append(name)
+        st.subheader(f"Player {i+1} Configuration")
+        h_name = st.text_input(f"Manager Name (Player {i+1})", value=f"Manager {i+1}", key=f"h_name_{i}")
         
-    if st.button("Initialize IPL League", type="primary"):
+        # Filter available teams so players don't select duplicates
+        available_choices = [team for team in TEAM_NAMES_POOL if team not in used_teams]
+        selected_team = st.selectbox(f"Choose Your IPL Franchise (Player {i+1})", options=available_choices, key=f"h_team_{i}")
+        used_teams.append(selected_team)
+        
+        human_configs.append({"manager": h_name, "team": selected_team})
+        
+    if st.button("Initialize ₹150 CR League", type="primary"):
         teams = []
-        available_names = TEAM_NAMES_POOL.copy()
-        random.shuffle(available_names)
         
-        for i in range(num_humans):
-            def_name = available_names.pop(0)
+        # 1. Add Human Controlled Custom Teams
+        for hc in human_configs:
             teams.append({
-                "team_name": f"{human_names[i]}'s {def_name}",
+                "team_name": f"{hc['manager']}'s {hc['team']}",
                 "is_human": True,
-                "purse": 10000, 
+                "purse": 15000, # ₹150 CR represented in Lakhs (15,000)
                 "squad": [],
                 "personality": "User",
                 "points": 0
             })
             
-        num_bots = 10 - num_humans
-        for i in range(num_bots):
-            bot_name = available_names.pop(0) + " (Bot)"
+        # 2. Add Fill-In AI Bot Managers for remaining spots to total exactly 10 teams
+        remaining_bot_names = [team for team in TEAM_NAMES_POOL if team not in used_teams]
+        for bot_team in remaining_bot_names:
             teams.append({
-                "team_name": bot_name,
+                "team_name": f"{bot_team} (Bot)",
                 "is_human": False,
-                "purse": 10000,
+                "purse": 15000, # Bots start with the same ₹150 CR
                 "squad": [],
                 "personality": random.choice(BOT_PERSONALITIES),
                 "points": 0
@@ -190,7 +199,7 @@ if st.session_state.game_stage == "setup":
 
 # --- STAGE 2: LIVE AUCTION ROOM ---
 elif st.session_state.game_stage == "auction":
-    st.header("🔨 Live Auction Room")
+    st.header("🔨 Live Auction Room (Budget: ₹150.00 CR)")
     
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
@@ -214,30 +223,51 @@ elif st.session_state.game_stage == "auction":
         
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
-                st.session_state.current_bid += 50
-                human_team = [t for t in st.session_state.teams if t["is_human"]][0]
-                st.session_state.highest_bidder = human_team
-                st.session_state.log_msg = f"You raised the stakes to ₹{st.session_state.current_bid/100:.2f} CR!"
-                
-                # Specialized Bot Bidding Engine
-                bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-                if bots and random.random() > 0.35:
-                    counter_bot = random.choice(bots)
+            # Dropdown menu to let multiple users choose who wants to raise the bid
+            human_teams = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
+            human_options = [t["team_name"] for t in human_teams]
+            
+            if human_options:
+                bidding_manager = st.selectbox("Select Bidding Manager:", options=human_options)
+                if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
                     st.session_state.current_bid += 50
-                    st.session_state.highest_bidder = counter_bot
-                    st.session_state.log_msg = f"🤖 {counter_bot['team_name']} counters with a ₹{st.session_state.current_bid/100:.2f} CR bid!"
-                st.rerun()
+                    # Match chosen name string back to team map object
+                    st.session_state.highest_bidder = next(t for t in st.session_state.teams if t["team_name"] == bidding_manager)
+                    st.session_state.log_msg = f"{bidding_manager} raised the stakes to ₹{st.session_state.current_bid/100:.2f} CR!"
+                    
+                    # Bot Counter Engine Logic
+                    bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
+                    if bots and random.random() > 0.35:
+                        counter_bot = random.choice(bots)
+                        st.session_state.current_bid += 50
+                        st.session_state.highest_bidder = counter_bot
+                        st.session_state.log_msg = f"🤖 {counter_bot['team_name']} counters with a ₹{st.session_state.current_bid/100:.2f} CR bid!"
+                    st.rerun()
+            else:
+                st.write("No human player can afford this bid.")
                 
         with col2:
-            if st.button("Pass / Sell Player", type="secondary", use_container_width=True):
+            st.write("---") # Alignment spacer
+            if st.button("Pass / Let Bots Fight", type="secondary", use_container_width=True):
+                # Bot automation algorithm if no human bids at base price
+                if st.session_state.highest_bidder is None:
+                    bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= st.session_state.current_bid]
+                    for _ in range(random.randint(1, 6)):
+                        if bots and random.random() > 0.3:
+                            counter_bot = random.choice(bots)
+                            st.session_state.current_bid += 50
+                            st.session_state.highest_bidder = counter_bot
+                            bots = [t for t in bots if t["purse"] >= (st.session_state.current_bid + 50)]
+                        else:
+                            break
+
                 if st.session_state.highest_bidder:
                     hb = st.session_state.highest_bidder
                     for t in st.session_state.teams:
                         if t["team_name"] == hb["team_name"]:
                             t["purse"] -= st.session_state.current_bid
                             t["squad"].append(player)
-                    st.toast(f"🔨 SOLD! {player['name']} joins {hb['team_name']}!")
+                    st.toast(f"🔨 SOLD! {player['name']} joins {hb['team_name']} for ₹{st.session_state.current_bid/100:.2f} CR!")
                 else:
                     st.toast(f"❌ {player['name']} remains UNSOLD.")
                 
