@@ -54,6 +54,7 @@ BASE_TEAM_STRENGTH = 55
 MATCH_VARIANCE_RANGE = 15
 SUPER_OVER_THRESHOLD = 0.25
 NRR_DIVISOR = 20
+TOP_PLAYERS_COUNT = 5
 
 
 def player_pool():
@@ -214,7 +215,7 @@ def strongest_available_players(team):
         if injury["team_id"] == team["id"] and injury["matchdays_left"] > 0
     }
     available = [player["rating"] for player in team["squad"] if player["name"] not in injured_names]
-    top_ratings = sorted(available, reverse=True)[:5]
+    top_ratings = sorted(available, reverse=True)[:TOP_PLAYERS_COUNT]
     if not top_ratings:
         return BASE_TEAM_STRENGTH
     return BASE_TEAM_STRENGTH + sum(top_ratings) / len(top_ratings)
@@ -283,7 +284,7 @@ def simulate_matchday():
         decided_in_super_over = False
         if abs(home_score - away_score) < SUPER_OVER_THRESHOLD:
             winner, loser = random.choice([(home_team, away_team), (away_team, home_team)])
-            margin = random.uniform(0.5, 3.0)
+            margin = max(margin, random.uniform(0.5, 3.0))
             decided_in_super_over = True
         else:
             winner, loser = (home_team, away_team) if home_score > away_score else (away_team, home_team)
@@ -364,7 +365,9 @@ with auction_tab:
             st.write(f"**Role:** {player['role']}")
             st.write(f"**Base Price:** ₹{player['base_price']} Cr")
             st.progress(min(player["rating"], 100) / 100, text=f"Player card rating: {player['rating']}")
-            lead_name = "No bids yet" if st.session_state.auction["leading_team"] is None else team_lookup(st.session_state.auction["leading_team"])["name"]
+            lead_name = "No bids yet"
+            if st.session_state.auction["leading_team"] is not None:
+                lead_name = team_lookup(st.session_state.auction["leading_team"])["name"]
             st.info(f"Current bid: ₹{st.session_state.auction['current_bid']} Cr | Leader: {lead_name}")
         with right:
             active_team = st.session_state.teams[st.session_state.auction["current_index"]]
