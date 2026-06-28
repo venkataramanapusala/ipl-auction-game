@@ -78,13 +78,14 @@ def initialise_league(owners):
         owner = owners.get(franchise, "").strip()
         is_human = bool(owner)
         personality = None if is_human else BOT_PERSONALITIES[bot_index % len(BOT_PERSONALITIES)]
+        bot_number = bot_index + 1
         if not is_human:
             bot_index += 1
         teams.append(
             {
                 "id": team_id,
                 "name": franchise,
-                "owner": owner or f"Bot GM {bot_index}",
+                "owner": owner or f"Bot GM {bot_number}",
                 "is_human": is_human,
                 "personality": personality,
                 "budget": 100,
@@ -276,14 +277,23 @@ def simulate_matchday():
         home_score = home_strength + random.uniform(-15, 15)
         away_score = away_strength + random.uniform(-15, 15)
         margin = abs(home_score - away_score)
-        winner, loser = (home_team, away_team) if home_score >= away_score else (away_team, home_team)
+        decided_in_super_over = False
+        if abs(home_score - away_score) < 0.25:
+            winner, loser = random.choice([(home_team, away_team), (away_team, home_team)])
+            margin = random.uniform(0.5, 3.0)
+            decided_in_super_over = True
+        else:
+            winner, loser = (home_team, away_team) if home_score > away_score else (away_team, home_team)
         st.session_state.standings[winner["id"]]["wins"] += 1
         st.session_state.standings[winner["id"]]["points"] += 2
         st.session_state.standings[loser["id"]]["losses"] += 1
         for team_id, delta in ((winner["id"], margin / 20), (loser["id"], -margin / 20)):
             st.session_state.standings[team_id]["played"] += 1
             st.session_state.standings[team_id]["nrr"] += delta
-        results.append(f"{winner['name']} beat {loser['name']} by {margin:.1f} simulation points.")
+        if decided_in_super_over:
+            results.append(f"{winner['name']} edged {loser['name']} in a super over after a tie.")
+        else:
+            results.append(f"{winner['name']} beat {loser['name']} by {margin:.1f} simulation points.")
 
     st.session_state.match_history.append({"day": day_index + 1, "twist": twist, "results": results})
     st.session_state.team_boosts = {}
@@ -344,6 +354,7 @@ with auction_tab:
     else:
         player = current_player()
         st.subheader("Option 1: Raise Bid or Pass")
+        st.caption("Option 1 is the live bidding move for the team currently on the clock.")
         left, right = st.columns([1.2, 1])
         with left:
             st.markdown(f"## {player['name']}")
