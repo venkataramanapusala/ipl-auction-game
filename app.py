@@ -24,6 +24,8 @@ BOT_PERSONALITIES = [
     {"name": "All-Rounder Collector", "min_value": 0.95, "max_squad": 9, "raise_bias": 0.55},
 ]
 
+HUMAN_BIDDING_PROFILE = {"min_value": 1.0, "max_squad": 9}
+
 PLAYERS = [
     {"name": "Virat Kohli", "role": "Batter", "base_price": 14, "rating": 95},
     {"name": "Jasprit Bumrah", "role": "Bowler", "base_price": 13, "rating": 94},
@@ -122,7 +124,7 @@ def current_player():
 
 
 def max_bid_for_team(team):
-    personality = team["personality"] or {"min_value": 1.0, "max_squad": 9}
+    personality = team["personality"] or HUMAN_BIDDING_PROFILE
     squad_factor = 1 if len(team["squad"]) < personality.get("max_squad", 9) else 0.92
     return (
         max(team["budget"], 0) * MAX_BID_BUDGET_SHARE * squad_factor
@@ -282,7 +284,8 @@ def simulate_matchday():
         away_score = away_strength + random.uniform(-MATCH_VARIANCE_RANGE, MATCH_VARIANCE_RANGE)
         decided_in_super_over = False
         if abs(home_score - away_score) < SUPER_OVER_THRESHOLD:
-            winner, loser = random.choice([(home_team, away_team), (away_team, home_team)])
+            home_wins_super_over = random.choice([True, False])
+            winner, loser = (home_team, away_team) if home_wins_super_over else (away_team, home_team)
             margin = random.uniform(0.5, 3.0)
             decided_in_super_over = True
         else:
@@ -357,7 +360,7 @@ with auction_tab:
         st.success("Auction complete. Move to the Season Simulator tab to begin the campaign.")
     else:
         player = current_player()
-        st.subheader("Live Auction - Option 1: Raise Bid or Pass")
+        st.subheader("Live Auction - Raise Bid or Pass")
         st.caption("The project brief specifically asked for the Option 1 bidding flow, so this screen focuses on Raise Bid/Pass.")
         left, right = st.columns([1.2, 1])
         with left:
