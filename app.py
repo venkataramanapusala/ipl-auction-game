@@ -106,7 +106,7 @@ if "player_pool" not in st.session_state:
         {"name": "Mohit Sharma", "role": "Bowler", "rating": 81, "base_price": 30},
         {"name": "Deepak Chahar", "role": "Bowler", "rating": 82, "base_price": 75},
         {"name": "Shardul Thakur", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "base_price": 50},
+        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "body_price": 50},
         {"name": "Bhuvneshwar Kumar", "role": "Bowler", "rating": 82, "base_price": 50},
         {"name": "Umran Malik", "role": "Bowler", "rating": 79, "base_price": 30},
         {"name": "Mayank Yadav", "role": "Bowler", "rating": 84, "base_price": 20},
@@ -228,6 +228,19 @@ if "player_pool" not in st.session_state:
     ]
     random.shuffle(st.session_state.player_pool)
 
+# --- LIVE ROSTER VIEW DIALOG POPUP ---
+@st.dialog("📋 Current Roster & Budget Review", width="medium")
+def view_teams_dialog():
+    st.write("Review team spending status and total player cards drafted so far:")
+    for t in st.session_state.teams:
+        with st.expander(f"{t['team_name']} — Purse Left: ₹{t['purse']/100:.2f} CR"):
+            st.write(f"**Total Signed:** {len(t['squad'])} players")
+            if t['squad']:
+                names_list = [f"{p['name']} ({p['role']} - OVR {p['rating']})" for p in t['squad']]
+                st.write(", ".join(names_list))
+            else:
+                st.caption("No players signed yet.")
+
 # --- SESSION STATE INITIALIZATION ---
 if "game_stage" not in st.session_state:
     st.session_state.game_stage = "setup"
@@ -248,11 +261,6 @@ if "scouted_count" not in st.session_state:
 if "scouted_players" not in st.session_state:
     st.session_state.scouted_players = set()
 
-# --- APP HEADER ---
-st.title("🏏 IPL 200-Player Live Clock Auction")
-st.markdown("Choose your franchise, start with **#150.00 CR**, and draft **at least 15 players** to avoid tournament disqualification!")
-st.divider()
-
 # --- STAGE 1: SETUP & TEAM SELECTION ---
 if st.session_state.game_stage == "setup":
     st.header("👥 League Setup & Team Selection")
@@ -268,7 +276,7 @@ if st.session_state.game_stage == "setup":
         used_teams.append(selected_team)
         human_configs.append({"manager": h_name, "team": selected_team})
         
-    if st.button("Initialize #150 CR League", type="primary"):
+    if st.button("Initialize ₹150 CR League", type="primary"):
         teams = []
         for hc in human_configs:
             teams.append({
@@ -294,64 +302,46 @@ elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
         st.success("All 200 players finished! Evaluating squad size rules...")
-        
         for t in st.session_state.teams:
             if len(t["squad"]) < 15:
                 t["disqualified"] = True
                 t["points"] = -99  
-                
         if st.button("Proceed to Dashboard"):
             st.session_state.game_stage = "dashboard"
             st.rerun()
     else:
         player = st.session_state.player_pool[idx]
         
-        # --- NEW HIGH-TIER VALUATION LOGIC LOOP ---
-        # Formulates price scale matching target sheet brackets relative to total budget strength
-        if player["rating"] >= 93:
-            reasonable_val = random.randint(1350, 1650)
-        elif player["rating"] >= 90:
-            reasonable_val = random.randint(950, 1300)
-        elif player["rating"] >= 86:
-            reasonable_val = random.randint(450, 950)
-        elif player["rating"] >= 83:
-            reasonable_val = random.randint(200, 500)
-        elif player["rating"] >= 80:
-            reasonable_val = random.randint(80, 240)
-        else:
-            reasonable_val = random.randint(20, 75)
+        # Fair valuation mapping logic
+        if player["rating"] >= 93: reasonable_val = random.randint(1350, 1650)
+        elif player["rating"] >= 90: reasonable_val = random.randint(950, 1300)
+        elif player["rating"] >= 86: reasonable_val = random.randint(450, 950)
+        elif player["rating"] >= 83: reasonable_val = random.randint(200, 500)
+        elif player["rating"] >= 80: reasonable_val = random.randint(80, 240)
+        else: reasonable_val = random.randint(20, 75)
 
         if st.session_state.current_bid == 0:
             st.session_state.current_bid = player["base_price"]
             st.session_state.highest_bidder = None
             st.session_state.timer_seconds = 10
-            st.session_state.log_msg = f"Next up: {player['name']}! Base price set at # {player['base_price']/100:.2f} CR."
+            st.session_state.log_msg = f"Next up: {player['name']}! Base price set at ₹{player['base_price']/100:.2f} CR."
 
         st_autorefresh(interval=1000, key="auction_timer")
         
         st.header("🔨 Live Auction Room")
         
-        # --- REAL-TIME BOT BIDDING ---
+        # --- TIMER AND AUTOMATED PASS BIDDING ---
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
             
+            # Interactive real-time active bot war checks
             bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-            
             if bots and random.random() < 0.40:
                 valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
-                
                 smart_bidding_bots = []
                 for b in valid_bots:
-                    multiplier = 1.0
-                    if len(b["squad"]) < 15 and idx > 120:
-                        multiplier = 1.40 
-                    elif b["personality"] == "Batting-Heavy" and player["role"] == "Batsman":
-                        multiplier = 1.20
-                    elif b["personality"] == "Bowling-Heavy" and player["role"] == "Bowler":
-                        multiplier = 1.20
-                        
-                    max_walkaway_limit = int(reasonable_val * multiplier)
-                    if (st.session_state.current_bid + 50) <= max_walkaway_limit:
+                    multiplier = 1.40 if len(b["squad"]) < 15 and idx > 120 else 1.10
+                    if (st.session_state.current_bid + 50) <= int(reasonable_val * multiplier):
                         smart_bidding_bots.append(b)
                 
                 if smart_bidding_bots:
@@ -359,15 +349,25 @@ elif st.session_state.game_stage == "auction":
                     st.session_state.current_bid += 50
                     st.session_state.highest_bidder = counter_bot
                     st.session_state.timer_seconds = 10  
-                    st.session_state.log_msg = f"🤖 {counter_bot['team_name']} ({counter_bot['personality']}) bids # {st.session_state.current_bid/100:.2f} CR."
+                    st.session_state.log_msg = f"🤖 {counter_bot['team_name']} bids ₹{st.session_state.current_bid/100:.2f} CR."
                     st.rerun()
         else:
+            # TIMER HIT ZERO Settle conditions
             if st.session_state.highest_bidder:
+                # Settle with high bidder
                 hb = st.session_state.highest_bidder
                 for t in st.session_state.teams:
                     if t["team_name"] == hb["team_name"]:
                         t["purse"] -= st.session_state.current_bid
                         t["squad"].append(player)
+            else:
+                # ALL PLAYERS PASSED: Allocate randomly to a capable bot at base price!
+                capable_bots = [t for t in st.session_state.teams if not t["is_human"] and t["purse"] >= player["base_price"]]
+                if capable_bots:
+                    assigned_bot = random.choice(capable_bots)
+                    assigned_bot["purse"] -= player["base_price"]
+                    assigned_bot["squad"].append(player)
+                    st.toast(f"🎲 All passed! {player['name']} joined {assigned_bot['team_name']} for base.")
             
             st.session_state.auction_index += 1
             st.session_state.current_bid = 0
@@ -375,28 +375,32 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 10
             st.rerun()
 
+        # Render layout elements
         st.warning(f"⏳ Time Remaining: **{st.session_state.timer_seconds + 1} seconds**")
         st.progress(st.session_state.timer_seconds / 10)
 
         st.info(f"**Player ({idx+1}/200):** {player['name']} | **Role:** {player['role']} | **Skill OVR:** {player['rating']}")
         
-        # Scouting Radar Interface
-        col_scout1, col_scout2 = st.columns([2, 1])
-        with col_scout1:
+        # View Team and Scout Layout Line
+        col_scout, col_view_btn = st.columns([2, 1])
+        with col_scout:
             if player["name"] in st.session_state.scouted_players:
-                st.success(f"📊 **Scouting Valuation:** # {reasonable_val/100:.2f} CR is a fair price limit.")
+                st.success(f"📊 **Scouting Guide:** Target boundary ₹{reasonable_val/100:.2f} CR.")
+            elif st.session_state.scouted_count < 30:
+                if st.button(f"🔍 Scan Target Value ({30 - st.session_state.scouted_count} Left)", use_container_width=True):
+                    st.session_state.scouted_players.add(player["name"])
+                    st.session_state.scouted_count += 1
+                    st.rerun()
             else:
-                if st.session_state.scouted_count < 30:
-                    if st.button(f"🔍 Scan Fair Market Value ({30 - st.session_state.scouted_count} Left)", use_container_width=True):
-                        st.session_state.scouted_players.add(player["name"])
-                        st.session_state.scouted_count += 1
-                        st.rerun()
-                else:
-                    st.error("🔒 Scouting Radar Locked!")
+                st.error("🔒 Scouting Radar Locked!")
+                
+        with col_view_btn:
+            # Triggering view panel layout modal box overlay
+            if st.button("📋 View All Teams", use_container_width=True):
+                view_teams_dialog()
 
-        st.metric(label="Current High Bid", value=f"# {st.session_state.current_bid/100:.2f} CR", 
+        st.metric(label="Current High Bid", value=f"₹{st.session_state.current_bid/100:.2f} CR", 
                   delta=f"Held by: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'None'}")
-        
         st.caption(st.session_state.log_msg)
         
         human_teams = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
@@ -406,11 +410,11 @@ elif st.session_state.game_stage == "auction":
         with col1:
             if human_options:
                 bidding_manager = st.selectbox("Select Bidding Manager:", options=human_options)
-                if st.button("Raise Bid (+# 50 L)", type="primary", use_container_width=True):
+                if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
                     st.session_state.current_bid += 50
                     st.session_state.highest_bidder = next(t for t in st.session_state.teams if t["team_name"] == bidding_manager)
                     st.session_state.timer_seconds = 10  
-                    st.session_state.log_msg = f"{bidding_manager} raised bid to # {st.session_state.current_bid/100:.2f} CR!"
+                    st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
                     st.rerun()
             else:
                 st.write("No humans can afford this price.")
@@ -425,36 +429,18 @@ elif st.session_state.game_stage == "auction":
 elif st.session_state.game_stage == "dashboard":
     st.header("📋 Tournament Leaderboard")
     
-    if random.random() < 0.20:
-        st.warning("🚨 **UNEXPECTED SEASON TWIST!**")
-        twist_type = random.choice(["injury", "morale"])
-        active_humans = [t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]]
-        if active_humans:
-            human_team = active_humans[0]
-            if twist_type == "injury" and human_team["squad"]:
-                injured_p = random.choice(human_team["squad"])
-                st.error(f"Medical Report: {injured_p['name']} is injured in training! Form rating dropped.")
-            else:
-                st.info("Management Update: Traveling fatigue caused a dip in recovery fitness. Morale shifts!")
-            
     sorted_teams = sorted(st.session_state.teams, key=lambda x: x["points"], reverse=True)
     for t in sorted_teams:
         col_t, col_p, col_w = st.columns([2, 1, 1])
         with col_t: 
-            if t["disqualified"]:
-                st.markdown(f"❌ ~~**{t['team_name']}**~~")
-            else:
-                st.markdown(f"**{t['team_name']}** ({len(t['squad'])} players)")
+            if t["disqualified"]: st.markdown(f"❌ ~~**{t['team_name']}**~~")
+            else: st.markdown(f"**{t['team_name']}** ({len(t['squad'])} players)")
         with col_p: 
-            if t["disqualified"]:
-                st.error("DISQUALIFIED (Under 15 players)")
-            else:
-                st.markdown(f"🏆 {t['points']} Pts")
-        with col_w: 
-            st.caption(f"Wallet: # {t['purse']/100:.2f} CR")
+            if t["disqualified"]: st.error("DISQUALIFIED (Under 15 players)")
+            else: st.markdown(f"🏆 {t['points']} Pts")
+        with col_w: st.caption(f"Wallet: ₹{t['purse']/100:.2f} CR")
             
     st.divider()
-    
     active_squads = [t for t in st.session_state.teams if not t["disqualified"]]
     
     if len(active_squads) >= 2:
@@ -467,11 +453,10 @@ elif st.session_state.game_stage == "dashboard":
                 if p1_score > p2_score: t1["points"] += 2
                 elif p2_score > p1_score: t2["points"] += 2
                 else:
-                    t1["points"] += 1
-                    t2["points"] += 1
+                    t1["points"] += 1; t2["points"] += 1
             st.rerun()
     else:
-        st.error("Not enough qualified teams left with 15+ players to simulate matches!")
+        st.error("Not enough qualified teams left with 15+ players!")
 
     if st.button("Reset Tournament", type="secondary"):
         st.session_state.game_stage = "setup"
