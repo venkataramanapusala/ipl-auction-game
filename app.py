@@ -51,6 +51,9 @@ BID_STEP = 1
 MAX_BID_BUDGET_SHARE = 0.28
 RATING_TO_BID_DIVISOR = 6
 BASE_TEAM_STRENGTH = 55
+MATCH_VARIANCE_RANGE = 15
+SUPER_OVER_THRESHOLD = 0.25
+NRR_DIVISOR = 20
 
 
 def player_pool():
@@ -274,11 +277,11 @@ def simulate_matchday():
         away_team = team_lookup(away_id)
         home_strength = strongest_available_players(home_team) + st.session_state.team_boosts.get(home_id, 0)
         away_strength = strongest_available_players(away_team) + st.session_state.team_boosts.get(away_id, 0)
-        home_score = home_strength + random.uniform(-15, 15)
-        away_score = away_strength + random.uniform(-15, 15)
+        home_score = home_strength + random.uniform(-MATCH_VARIANCE_RANGE, MATCH_VARIANCE_RANGE)
+        away_score = away_strength + random.uniform(-MATCH_VARIANCE_RANGE, MATCH_VARIANCE_RANGE)
         margin = abs(home_score - away_score)
         decided_in_super_over = False
-        if abs(home_score - away_score) < 0.25:
+        if abs(home_score - away_score) < SUPER_OVER_THRESHOLD:
             winner, loser = random.choice([(home_team, away_team), (away_team, home_team)])
             margin = random.uniform(0.5, 3.0)
             decided_in_super_over = True
@@ -287,7 +290,7 @@ def simulate_matchday():
         st.session_state.standings[winner["id"]]["wins"] += 1
         st.session_state.standings[winner["id"]]["points"] += 2
         st.session_state.standings[loser["id"]]["losses"] += 1
-        for team_id, delta in ((winner["id"], margin / 20), (loser["id"], -margin / 20)):
+        for team_id, delta in ((winner["id"], margin / NRR_DIVISOR), (loser["id"], -margin / NRR_DIVISOR)):
             st.session_state.standings[team_id]["played"] += 1
             st.session_state.standings[team_id]["nrr"] += delta
         if decided_in_super_over:
@@ -353,8 +356,8 @@ with auction_tab:
         st.success("Auction complete. Move to the Season Simulator tab to begin the campaign.")
     else:
         player = current_player()
-        st.subheader("Option 1: Raise Bid or Pass")
-        st.caption("Option 1 is the live bidding move for the team currently on the clock.")
+        st.subheader("Live Auction - Option 1: Raise Bid or Pass")
+        st.caption("The project brief specifically asked for the Option 1 bidding flow, so this screen focuses on Raise Bid/Pass.")
         left, right = st.columns([1.2, 1])
         with left:
             st.markdown(f"## {player['name']}")
