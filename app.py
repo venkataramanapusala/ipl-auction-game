@@ -22,6 +22,11 @@ BOT_PERSONALITIES = [
     {"name": "Budget Hawk", "min_value": 0.84, "max_squad": 8, "raise_bias": 0.35},
     {"name": "Youth Scout", "min_value": 0.9, "max_squad": 10, "raise_bias": 0.52},
     {"name": "All-Rounder Collector", "min_value": 0.95, "max_squad": 9, "raise_bias": 0.55},
+    {"name": "Spin Wizard", "min_value": 0.9, "max_squad": 8, "raise_bias": 0.48},
+    {"name": "Pace Merchant", "min_value": 0.93, "max_squad": 8, "raise_bias": 0.57},
+    {"name": "Captain's Trust", "min_value": 0.88, "max_squad": 9, "raise_bias": 0.44},
+    {"name": "Powerplay Optimiser", "min_value": 0.97, "max_squad": 8, "raise_bias": 0.6},
+    {"name": "Clutch Specialist", "min_value": 0.91, "max_squad": 9, "raise_bias": 0.53},
 ]
 
 HUMAN_BIDDING_PROFILE = {"min_value": 1.0, "max_squad": 9}
@@ -57,6 +62,10 @@ MATCH_VARIANCE_RANGE = 15
 SUPER_OVER_THRESHOLD = 0.25
 NRR_DIVISOR = 20
 TOP_PLAYERS_COUNT = 5
+INJURY_PROBABILITY = 0.4
+DILEMMA_PROBABILITY = 0.75
+AUCTION_FEED_SIZE = 8
+MATCHDAY_RECAP_SIZE = 3
 
 
 def player_pool():
@@ -225,7 +234,7 @@ def strongest_available_players(team):
 
 def register_random_twist():
     roll = random.random()
-    if roll < 0.4:
+    if roll < INJURY_PROBABILITY:
         candidates = [team for team in st.session_state.teams if team["squad"]]
         if not candidates:
             return None
@@ -239,7 +248,7 @@ def register_random_twist():
         }
         st.session_state.injuries.append(injury)
         return f"Injury twist: {player['name']} ({team['name']}) is unavailable for {injury['matchdays_left']} matchday(s)."
-    if roll < 0.75:
+    if roll < DILEMMA_PROBABILITY:
         team = random.choice(st.session_state.teams)
         st.session_state.pending_dilemma = {
             "team_id": team["id"],
@@ -398,7 +407,7 @@ with auction_tab:
         st.divider()
         render_team_cards()
         st.subheader("Auction Feed")
-        recent_updates = list(reversed(st.session_state.auction_log[-8:]))
+        recent_updates = list(reversed(st.session_state.auction_log[-AUCTION_FEED_SIZE:]))
         if recent_updates:
             for entry in recent_updates:
                 st.write(f"- {entry}")
@@ -446,7 +455,7 @@ with season_tab:
 
     if st.session_state.match_history:
         st.markdown("### Matchday Recap")
-        for day in reversed(st.session_state.match_history[-3:]):
+        for day in reversed(st.session_state.match_history[-MATCHDAY_RECAP_SIZE:]):
             st.markdown(f"**Matchday {day['day']}**")
             st.write(day["twist"])
             for result in day["results"]:
