@@ -48,6 +48,9 @@ PLAYERS = [
 ]
 
 BID_STEP = 1
+MAX_BID_BUDGET_SHARE = 0.28
+RATING_TO_BID_DIVISOR = 6
+BASE_TEAM_STRENGTH = 55
 
 
 def player_pool():
@@ -116,7 +119,10 @@ def current_player():
 def max_bid_for_team(team):
     personality = team["personality"] or {"min_value": 1.0}
     squad_factor = 1 if len(team["squad"]) < personality.get("max_squad", 9) else 0.92
-    return max(team["budget"], 0) * 0.28 * squad_factor + current_player()["rating"] * personality["min_value"] / 6
+    return (
+        max(team["budget"], 0) * MAX_BID_BUDGET_SHARE * squad_factor
+        + current_player()["rating"] * personality["min_value"] / RATING_TO_BID_DIVISOR
+    )
 
 
 def find_next_bidder():
@@ -168,6 +174,13 @@ def resolve_current_player():
     nominate_next_player()
 
 
+def place_bid(team_id, bid_value):
+    st.session_state.auction["leading_team"] = team_id
+    st.session_state.auction["current_bid"] = bid_value
+    st.session_state.auction["passed"] = set()
+    find_next_bidder()
+
+
 def process_bots():
     while current_player() and not st.session_state.auction.get("complete"):
         auction = st.session_state.auction
@@ -180,15 +193,10 @@ def process_bots():
         personality = team["personality"]
         wants_raise = next_bid <= threshold and random.random() <= personality["raise_bias"]
         if wants_raise:
-            if auction["leading_team"] is None:
-                auction["leading_team"] = team["id"]
-                auction["current_bid"] = current_player()["base_price"]
-            else:
-                auction["leading_team"] = team["id"]
-                auction["current_bid"] += BID_STEP
-            auction["passed"] = set()
-            if not find_next_bidder():
-                break
+            place_bid(
+                team["id"],
+                current_player()["base_price"] if auction["leading_team"] is None else auction["current_bid"] + BID_STEP,
+            )
         else:
             auction["passed"].add(team["id"])
             if not find_next_bidder():
@@ -204,8 +212,8 @@ def strongest_available_players(team):
     available = [player["rating"] for player in team["squad"] if player["name"] not in injured_names]
     top_ratings = sorted(available, reverse=True)[:5]
     if not top_ratings:
-        return 55
-    return 55 + sum(top_ratings) / len(top_ratings)
+        return BASE_TEAM_STRENGTH
+    return BASE_TEAM_STRENGTH + sum(top_ratings) / len(top_ratings)
 
 
 def register_random_twist():
@@ -357,15 +365,7 @@ with auction_tab:
                 raise_col, pass_col = st.columns(2)
                 with raise_col:
                     if st.button(f"Raise to ₹{next_bid} Cr", use_container_width=True):
-                        if st.session_state.auction["leading_team"] is None:
-                            st.session_state.auction["leading_team"] = active_team["id"]
-                            st.session_state.auction["current_bid"] = player["base_price"]
-                            st.session_state.auction["passed"] = set()
-                        else:
-                            st.session_state.auction["leading_team"] = active_team["id"]
-                            st.session_state.auction["current_bid"] = next_bid
-                            st.session_state.auction["passed"] = set()
-                        find_next_bidder()
+                        place_bid(active_team["id"], next_bid)
                         st.rerun()
                 with pass_col:
                     if st.button("Pass", use_container_width=True):
