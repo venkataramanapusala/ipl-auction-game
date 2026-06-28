@@ -106,7 +106,7 @@ if "player_pool" not in st.session_state:
         {"name": "Mohit Sharma", "role": "Bowler", "rating": 81, "base_price": 30},
         {"name": "Deepak Chahar", "role": "Bowler", "rating": 82, "base_price": 75},
         {"name": "Shardul Thakur", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "body_price": 50},
+        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "base_price": 50},
         {"name": "Bhuvneshwar Kumar", "role": "Bowler", "rating": 82, "base_price": 50},
         {"name": "Umran Malik", "role": "Bowler", "rating": 79, "base_price": 30},
         {"name": "Mayank Yadav", "role": "Bowler", "rating": 84, "base_price": 20},
