@@ -9,8 +9,8 @@ st.set_page_config(page_title="IPL Live Draft Room", page_icon="🏏", layout="c
 # --- CUSTOM CSS FOR SLICK DESIGN ---
 st.markdown("""
     <style>
-    .big-font { font-size:24px !important; font-weight: bold; color: #1E3A8A; }
-    .card-box { padding: 15px; border-radius: 10px; background-color: #F3F4F6; border-left: 5px solid #3B82F6; margin-bottom: 10px; }
+    .big-font { font-size:24px !important; font-weight: bold; color: #3B82F6; }
+    .card-box { padding: 15px; border-radius: 10px; background-color: #111827; border-left: 5px solid #3B82F6; margin-bottom: 10px; color: #FFFFFF; }
     .timer-text { font-size: 20px; font-weight: bold; color: #EF4444; }
     </style>
 """, unsafe_allow_html=True)
