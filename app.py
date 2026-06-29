@@ -7,8 +7,13 @@ from streamlit_autorefresh import st_autorefresh
 st.set_page_config(page_title="IPL Live Draft Room", page_icon="🏏", layout="centered")
 
 # --- CUSTOM CSS FOR SLICK DESIGN ---
+# --- CUSTOM CSS FOR SLICK DESIGN ---
 st.markdown("""
     <style>
+    /* Force the main app background to pure black */
+    .stApp {
+        background-color: #000000 !important;
+    }
     .big-font { font-size:24px !important; font-weight: bold; color: #3B82F6; }
     .card-box { padding: 15px; border-radius: 10px; background-color: #111827; border-left: 5px solid #3B82F6; margin-bottom: 10px; color: #FFFFFF; }
     .timer-text { font-size: 20px; font-weight: bold; color: #EF4444; }
