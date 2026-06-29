@@ -168,6 +168,7 @@ if "player_pool" not in st.session_state:
         {"name": "Washington Sundar", "role": "All-Rounder", "rating": 81, "base_price": 50},
         {"name": "Moeen Ali", "role": "All-Rounder", "rating": 82, "base_price": 50},
         {"name": "Mitchell Marsh", "role": "All-Rounder", "rating": 84, "base_price": 75},
+        {"name": "Romario Shepherd", "role": "All-Rounder", "rating": 80, "block": "true"},
         {"name": "Romario Shepherd", "role": "All-Rounder", "rating": 80, "base_price": 40},
         {"name": "Shakib Al Hasan", "role": "All-Rounder", "rating": 87, "base_price": 100},
         {"name": "Ben Stokes", "role": "All-Rounder", "rating": 88, "base_price": 200},
@@ -234,6 +235,7 @@ if "player_pool" not in st.session_state:
         {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50}
     ]
     random.shuffle(st.session_state.player_pool)
+
 # --- VALUATION HELPER ---
 def get_reasonable_val(player, current_index):
     random.seed(current_index + 1000)
@@ -243,6 +245,7 @@ def get_reasonable_val(player, current_index):
     else: val = random.randint(80, 400)
     random.seed() 
     return val
+
 def get_player_trait(player):
     if player["rating"] >= 93: return "👑 Legendary Icon Master"
     if player["rating"] <= 80: return "🌱 Debutant Prospect"
@@ -312,11 +315,13 @@ if "press_conference" not in st.session_state:
     st.session_state.press_conference = None
 if "live_match_state" not in st.session_state:
     st.session_state.live_match_state = None
+if "next_match_queued" not in st.session_state:
+    st.session_state.next_match_queued = None
 
 # --- FLOATING CORNER PURSE OVERLAY CSS ---
 active_humans = [t for t in st.session_state.teams if t["is_human"]]
 if active_humans:
-    purse_texts = "<br/>".join([f"{h['team_name'].split('\'s ')[0]}: ₹{h['purse']/100:.2f}M" for h in active_humans])
+    purse_texts = "<br/>".join([f"{h['team_name'].split('\'s ')[0]}: ₹{h['purse']/100:.2f}CR" for h in active_humans])
     st.markdown(f"""
         <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E3A8A, #3B82F6); 
                     color: white; padding: 12px 20px; border-radius: 10px; font-weight: bold; 
@@ -519,9 +524,17 @@ elif st.session_state.game_stage == "auction":
                 st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
                 st.rerun()
 
-# --- STAGE 2.5: LINEUP LOCK IN (WITH MULTI-HUMAN TOGGLE + ASSET TRAIT INSPECTION) ---
+# --- STAGE 2.5: LINEUP SELECTION (DYNAMIC INTERCEPT BEFORE EACH MATCH) ---
 elif st.session_state.game_stage == "lineup":
-    st.header("🏏 Match Lineup Selector Room")
+    st.header("🏏 Tactical Match Lineup Lock-in")
+    
+    # Show active pitch venue conditions so managers can select optimized builds
+    st.markdown(f"""
+        <div style='padding: 15px; border-radius: 8px; background-color: #1E1B4B; border: 1px solid #4338CA; margin-bottom: 20px;'>
+            <h4 style='margin:0; color:#60A5FA;'>🏟️ UPCOMING MATCHDAY VENUE: {st.session_state.current_venue['name']}</h4>
+            <p style='margin:5px 0 0 0; font-size:14px; color:#E0E7FF;'>{st.session_state.current_venue['desc']}</p>
+        </div>
+    """, unsafe_allow_html=True)
     
     for t in st.session_state.teams:
         if not t["is_human"]:
@@ -533,34 +546,90 @@ elif st.session_state.game_stage == "lineup":
     selected_human_name = st.selectbox("Switch Between Active Human Rosters to Set Tactics:", options=[t["team_name"] for t in human_lineups])
     t = next(team for team in human_lineups if team["team_name"] == selected_human_name)
     
-    st.subheader(f"Configure Strategy Matrix: {t['team_name']}")
+    st.subheader(f"Adjust Strategy Matrix: {t['team_name']}")
     player_map = {p["name"]: p for p in t["squad"]}
     
+    # Read default lineup options
+    current_defaults = [p["name"] for p in t["playing_11"]] if t["playing_11"] else list(player_map.keys())[:11]
     p12_names = st.multiselect(f"Select Playing 12 (11 Starters + 1 Impact Sub):", options=list(player_map.keys()), 
-                               default=list(player_map.keys())[:12] if len(t["squad"]) >= 12 else list(player_map.keys()), key=f"p12_{t['team_name']}")
+                               default=current_defaults if len(current_defaults) >= 11 else list(player_map.keys())[:11], key=f"p12_{t['team_name']}")
     
     if p12_names:
         inspect_name = st.selectbox("🔍 Select Player to Inspect Skills & Traits:", options=p12_names, key=f"inspect_{t['team_name']}")
         if st.button("🔍 Scout Deep Profile Window", use_container_width=True, key=f"inspect_btn_{t['team_name']}"):
             inspect_player_dialog(player_map[inspect_name])
 
-    if st.button(f"Save Tactical 12 Roster Setup for {t['team_name']}", type="secondary"):
+    if st.button(f"Lock Squad Form & Lineup for Match Day", type="secondary"):
         if len(p12_names) < 11 or len(p12_names) > 12: 
             st.error("Roster counts must match exactly 11 or 12 structural players!")
         else:
             t["playing_11"] = [player_map[n] for n in p12_names[:11]]
             t["impact_player"] = player_map[p12_names[11]] if len(p12_names) == 12 else None
-            st.success("Squad lineup metrics saved safely!")
+            st.success("Squad lineup metrics saved safely for this match!")
 
     st.divider()
-    if st.button("Launch Management Hub Operations", type="primary", use_container_width=True):
+    
+    # Action conditional pathway logic back out to operations or directly into simulation arena
+    if st.session_state.next_match_queued:
+        btn_label = "🔒 Lock Changes & Enter Live Match Simulation"
+    else:
+        btn_label = "Go to Operations Dashboard Hub"
+        
+    if st.button(btn_label, type="primary", use_container_width=True):
+        # Fill defaults for anyone who skipped manual adjustment
         for h in human_lineups:
             if not h["playing_11"]:
                 s = sorted(h["squad"], key=lambda x: x["rating"], reverse=True)
                 h["playing_11"] = s[:11]
                 h["impact_player"] = s[11] if len(s) > 11 else None
-        st.session_state.game_stage = "dashboard"
-        st.rerun()
+                
+        if st.session_state.next_match_queued:
+            # Reroute to run the calculations saved from dashboard controls
+            mq = st.session_state.next_match_queued
+            if mq["type"] == "arena":
+                st.session_state.live_match_state = mq["payload"]
+                st.session_state.next_match_queued = None
+                st.session_state.game_stage = "dashboard"
+                st.rerun()
+            elif mq["type"] == "autosim":
+                # Execute automated loop instantly
+                active_squads = st.session_state.teams
+                boost_role = st.session_state.current_venue["boost_role"]
+                boost_amt = st.session_state.current_venue["boost_amount"]
+                
+                random.shuffle(active_squads)
+                for i in range(0, len(active_squads) - 1, 2):
+                    t1, t2 = active_squads[i], active_squads[i+1]
+                    t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
+                    t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
+                    
+                    p1, p2 = t1_b * (t1["morale"]/100) + random.randint(-30,30), t2_b * (t2["morale"]/100) + random.randint(-30,30)
+                    
+                    all_batsmen = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Batsman", "Wicket-Keeper"]]
+                    all_bowlers = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Bowler", "All-Rounder"]]
+                    top_bat = random.choice(all_batsmen)["name"] if all_batsmen else "Roster Star"
+                    top_bowl = random.choice(all_bowlers)["name"] if all_bowlers else "Bullet Bowler"
+                    
+                    r_rolled, w_rolled = random.randint(45, 95), random.randint(3, 5)
+                    st.session_state.stats_runs[top_bat] = st.session_state.stats_runs.get(top_bat, 0) + r_rolled
+                    st.session_state.stats_wickets[top_bowl] = st.session_state.stats_wickets.get(top_bowl, 0) + w_rolled
+                    
+                    if p1 > p2:
+                        t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1["morale"]+4)
+                        t2["losses"] += 1; t2["morale"] = max(30, t2["morale"]-4)
+                    else:
+                        t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2["morale"]+4)
+                        t1["losses"] += 1; t1["morale"] = max(30, t1["morale"]-4)
+                        
+                st.session_state.match_history.append({"fixture": f"Match Day Set {st.session_state.match_day}", "result": "Simulated Bracket Concluded"})
+                st.session_state.match_day += 1
+                st.session_state.current_venue = random.choice(VENUES)
+                st.session_state.next_match_queued = None
+                st.session_state.game_stage = "dashboard"
+                st.rerun()
+        else:
+            st.session_state.game_stage = "dashboard"
+            st.rerun()
 
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
@@ -706,43 +775,41 @@ elif st.session_state.game_stage == "dashboard":
         st.divider()
         st.subheader("Simulate League Actions")
         
+        # --- FIXED ROUTING CONTROLS: INTERCEPT ACTION TO FORCE SQUAD LINEUP CHECKS EACH MATCHDAY ---
         col_sim1, col_sim2 = st.columns(2)
         with col_sim1:
             if st.button("🎮 Play Live Ball-By-Ball Match", type="primary", use_container_width=True, key=f"arena_{user_team['team_name']}"):
                 opp_team = next(t for t in st.session_state.teams if t["team_name"] != user_team["team_name"])
-                st.session_state.live_match_state = {"user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": random.randint(55, 90), "log": "Arena Ready."}
+                arena_payload = {
+                    "user_team": user_team["team_name"], "opp_team": opp_team["team_name"],
+                    "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": random.randint(55, 90), "log": "Arena Ready."
+                }
+                st.session_state.next_match_queued = {"type": "arena", "payload": arena_payload}
+                st.session_state.game_stage = "lineup"
                 st.rerun()
                 
         with col_sim2:
             if st.button("⚡ Fast Auto-Simulate Remaining Matches", use_container_width=True, key=f"skip_{user_team['team_name']}"):
-                boost_role = st.session_state.current_venue["boost_role"]
-                boost_amt = st.session_state.current_venue["boost_amount"]
-                
-                random.shuffle(st.session_state.teams)
-                for i in range(0, len(st.session_state.teams) - 1, 2):
-                    t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-                    t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
-                    t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
+                # Core computation trigger intercepted to evaluate random narrative twist effects first
+                twist_roll = random.random()
+                if twist_roll < 0.25: 
+                    affected_team = random.choice(st.session_state.teams)
+                    twist_type = random.choice(["injury", "unrest"])
                     
-                    p1, p2 = t1_b * (t1["morale"]/100) + random.randint(-30,30), t2_b * (t2["morale"]/100) + random.randint(-30,30)
-                    
-                    all_batsmen = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Batsman", "Wicket-Keeper"]]
-                    all_bowlers = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Bowler", "All-Rounder"]]
-                    top_bat = random.choice(all_batsmen)["name"] if all_batsmen else "Roster Star"
-                    top_bowl = random.choice(all_bowlers)["name"] if all_bowlers else "Bullet Bowler"
-                    
-                    r_rolled, w_rolled = random.randint(45, 95), random.randint(3, 5)
-                    st.session_state.stats_runs[top_bat] = st.session_state.stats_runs.get(top_bat, 0) + r_rolled
-                    st.session_state.stats_wickets[top_bowl] = st.session_state.stats_wickets.get(top_bowl, 0) + w_rolled
-                    
-                    if p1 > p2:
-                        t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1["morale"]+4)
-                        t2["losses"] += 1; t2["morale"] = max(30, t2["morale"]-4)
-                    else:
-                        t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2["morale"]+4)
-                        t1["losses"] += 1; t1["morale"] = max(30, t1["morale"]-4)
-                        
-                st.session_state.match_history.append({"fixture": f"Match Day Set {st.session_state.match_day}", "result": "Simulated Bracket Concluded"})
-                st.session_state.match_day += 1
-                st.session_state.current_venue = random.choice(VENUES)
+                    if twist_type == "injury" and affected_team["playing_11"]:
+                        injured_p = random.choice(affected_team["playing_11"])
+                        injured_p["rating"] -= 8 
+                        st.session_state.career_event = f"🚨 TWIST: {affected_team['team_name']}'s key player **{injured_p['name']}** suffered an injury! Skill rating down by -8 points."
+                        affected_team["morale"] = max(30, affected_team["morale"] - 15)
+                    elif twist_type == "unrest":
+                        st.session_state.career_event = f"⚠️ TWIST: Locker room unrest detected at **{affected_team['team_name']}**! Morale dropped by -20%."
+                        affected_team["morale"] = max(20, affected_team["morale"] - 20)
+                else:
+                    st.session_state.career_event = None
+
+                st.session_state.next_match_queued = {"type": "autosim", "payload": None}
+                st.session_state.game_stage = "lineup"
                 st.rerun()
+
+        if st.session_state.career_event:
+            st.warning(st.session_state.career_event)
