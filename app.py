@@ -67,7 +67,6 @@ st.markdown("""
         transition: all 0.2s ease-in-out;
     }
     
-    /* Subtle hover effect for slick responsiveness */
     .stButton button:hover {
         background-color: #374151 !important;
         border-color: #3B82F6 !important;
@@ -76,96 +75,19 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- DATA POOLS ---
-TEAM_NAMES_POOL = [
-    "Mumbai Mavericks", "Chennai Kings", "Bangalore Blasters", 
-    "Delhi Dynamos", "Kolkata Knights", "Gujarat Giants", 
-    "Punjab Panthers", "Rajasthan Royals", "Lucknow Lions", "Hyderabad Heroes"
-]
-
-BOT_PERSONALITIES = ["Batting-Heavy", "Bowling-Heavy", "Youth-Focus", "Balanced"]
-
-# --- 200 PLAYER EXPLICIT DATABASE ---
+# --- LARGE SQUAD POOL GENERATOR ---
 if "player_pool" not in st.session_state:
-    st.session_state.player_pool = [
-        # === BATSMEN ===
-        {"name": "Virat Kohli", "role": "Batsman", "rating": 94, "base_price": 200},
-        {"name": "Suryakumar Yadav", "role": "Batsman", "rating": 93, "base_price": 150},
-        {"name": "Rohit Sharma", "role": "Batsman", "rating": 91, "base_price": 200},
-        {"name": "Travis Head", "role": "Batsman", "rating": 92, "base_price": 150},
-        {"name": "Shubman Gill", "role": "Batsman", "rating": 89, "base_price": 100},
-        {"name": "Yashasvi Jaiswal", "role": "Batsman", "rating": 90, "base_price": 100},
-        {"name": "Ruturaj Gaikwad", "role": "Batsman", "rating": 88, "base_price": 100},
-        {"name": "Rinku Singh", "role": "Batsman", "rating": 86, "base_price": 50},
-        {"name": "Sai Sudharsan", "role": "Batsman", "rating": 84, "base_price": 50},
-        {"name": "David Warner", "role": "Batsman", "rating": 85, "base_price": 100},
-        {"name": "Faf du Plessis", "role": "Batsman", "rating": 86, "base_price": 100},
-        {"name": "Kane Williamson", "role": "Batsman", "rating": 85, "base_price": 100},
-        {"name": "Tilak Varma", "role": "Batsman", "rating": 85, "base_price": 50},
-        {"name": "Shimron Hetmyer", "role": "Batsman", "rating": 83, "base_price": 75},
-        {"name": "Rovman Powell", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Prithvi Shaw", "role": "Batsman", "rating": 82, "base_price": 50},
-        {"name": "Tristan Stubbs", "role": "Batsman", "rating": 86, "base_price": 50},
-        {"name": "Tim David", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Riyan Parag", "role": "Batsman", "rating": 84, "base_price": 30},
-        {"name": "David Miller", "role": "Batsman", "rating": 87, "base_price": 100},
-        {"name": "Harry Brook", "role": "Batsman", "rating": 86, "base_price": 150},
-        {"name": "Finn Allen", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Glenn Phillips", "role": "Batsman", "rating": 85, "base_price": 50},
-        {"name": "Charith Asalanka", "role": "Batsman", "rating": 84, "base_price": 50},
-        {"name": "Angkrish Raghuvanshi", "role": "Batsman", "rating": 80, "base_price": 20},
-
-        # === BOWLERS ===
-        {"name": "Jasprit Bumrah", "role": "Bowler", "rating": 96, "base_price": 200},
-        {"name": "Rashid Khan", "role": "Bowler", "rating": 94, "base_price": 150},
-        {"name": "Pat Cummins", "role": "Bowler", "rating": 92, "base_price": 150},
-        {"name": "Mitchell Starc", "role": "Bowler", "rating": 91, "base_price": 150},
-        {"name": "Trent Boult", "role": "Bowler", "rating": 90, "base_price": 100},
-        {"name": "Mohammed Shami", "role": "Bowler", "rating": 91, "base_price": 150},
-        {"name": "Kuldeep Yadav", "role": "Bowler", "rating": 89, "base_price": 100},
-        {"name": "Yuzvendra Chahal", "role": "Bowler", "rating": 87, "base_price": 75},
-        {"name": "Matheesha Pathirana", "role": "Bowler", "rating": 88, "base_price": 50},
-        {"name": "Arshdeep Singh", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Kagiso Rabada", "role": "Bowler", "rating": 89, "base_price": 100},
-        {"name": "Mohammed Siraj", "role": "Bowler", "rating": 86, "base_price": 100},
-        {"name": "Ravi Bishnoi", "role": "Bowler", "rating": 85, "base_price": 50},
-        {"name": "Adam Zampa", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "T Natarajan", "role": "Bowler", "rating": 84, "base_price": 50},
-        {"name": "Harshit Rana", "role": "Bowler", "rating": 83, "base_price": 20},
-        {"name": "Varun Chakaravarthy", "role": "Bowler", "rating": 86, "base_price": 50},
-        {"name": "Josh Hazlewood", "role": "Bowler", "rating": 89, "base_price": 200},
-        {"name": "Marco Jansen", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Mustafizur Rahman", "role": "Bowler", "rating": 85, "base_price": 200},
-
-        # === ALL-ROUNDERS ===
-        {"name": "Hardik Pandya", "role": "All-Rounder", "rating": 91, "base_price": 150},
-        {"name": "Ravindra Jadeja", "role": "All-Rounder", "rating": 90, "base_price": 150},
-        {"name": "Axar Patel", "role": "All-Rounder", "rating": 89, "base_price": 100},
-        {"name": "Sunil Narine", "role": "All-Rounder", "rating": 92, "base_price": 100},
-        {"name": "Andre Russell", "role": "All-Rounder", "rating": 91, "base_price": 150},
-        {"name": "Glenn Maxwell", "role": "All-Rounder", "rating": 86, "base_price": 100},
-        {"name": "Marcus Stoinis", "role": "All-Rounder", "rating": 86, "base_price": 75},
-        {"name": "Liam Livingstone", "role": "All-Rounder", "rating": 85, "base_price": 75},
-        {"name": "Sam Curran", "role": "All-Rounder", "rating": 85, "base_price": 100},
-        {"name": "Cameron Green", "role": "All-Rounder", "rating": 86, "base_price": 100},
-        {"name": "Abhishek Sharma", "role": "All-Rounder", "rating": 87, "base_price": 30},
-        {"name": "Shivam Dube", "role": "All-Rounder", "rating": 86, "base_price": 50},
-        {"name": "Shakib Al Hasan", "role": "All-Rounder", "rating": 87, "base_price": 100},
-        {"name": "Daryl Mitchell", "role": "All-Rounder", "rating": 87, "base_price": 100},
-        {"name": "Wanindu Hasaranga", "role": "All-Rounder", "rating": 89, "base_price": 150},
-
-        # === WICKET-KEEPERS ===
-        {"name": "MS Dhoni", "role": "Wicket-Keeper", "rating": 88, "base_price": 100},
-        {"name": "Rishabh Pant", "role": "Wicket-Keeper", "rating": 91, "base_price": 200},
-        {"name": "Sanju Samson", "role": "Wicket-Keeper", "rating": 89, "base_price": 100},
-        {"name": "KL Rahul", "role": "Wicket-Keeper", "rating": 89, "base_price": 150},
-        {"name": "Ishan Kishan", "role": "Wicket-Keeper", "rating": 86, "base_price": 100},
-        {"name": "Nicholas Pooran", "role": "Wicket-Keeper", "rating": 92, "base_price": 150},
-        {"name": "Quinton de Kock", "role": "Wicket-Keeper", "rating": 86, "base_price": 100},
-        {"name": "Phil Salt", "role": "Wicket-Keeper", "rating": 88, "base_price": 75},
-        {"name": "Jos Buttler", "role": "Wicket-Keeper", "rating": 91, "base_price": 150},
-        {"name": "Heinrich Klaasen", "role": "Wicket-Keeper", "rating": 93, "base_price": 150},
-    ]
+    pool = []
+    for i in range(1, 61):
+        pool.append({"name": f"Batsman Elite {i}", "role": "Batsman", "rating": random.randint(78, 95), "base_price": random.choice([50, 100, 150, 200])})
+    for i in range(1, 61):
+        pool.append({"name": f"Pace Star {i}", "role": "Bowler", "rating": random.randint(78, 96), "base_price": random.choice([50, 100, 150, 200])})
+    for i in range(1, 51):
+        pool.append({"name": f"AllRound Dynamo {i}", "role": "All-Rounder", "rating": random.randint(78, 93), "base_price": random.choice([50, 100, 150])})
+    for i in range(1, 31):
+        pool.append({"name": f"Gloveman Pro {i}", "role": "Wicket-Keeper", "rating": random.randint(78, 94), "base_price": random.choice([50, 100, 150, 200])})
+    
+    st.session_state.player_pool = pool
     random.shuffle(st.session_state.player_pool)
 
 # --- VALUATION HELPER ---
@@ -188,15 +110,12 @@ def view_teams_dialog():
         all_rounders = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
         bowlers = len([p for p in t["squad"] if p["role"] == "Bowler"])
         
-        status_text = "⚠️ SQUAD MISMATCH" if (batsmen < 5 or keepers < 2 or all_rounders < 3 or bowlers < 5) else ""
+        status_text = "⚠️ SQUAD MISMATCH" if (batsmen < 5 or keepers < 2 or all_rounders < 3 or bowlers < 5) else "✅ VALID"
         if len(t["squad"]) > 20: status_text = "⚠️ OVER SIGNED"
             
-        with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR {status_text}"):
+        with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR ({status_text})"):
             st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
             st.write(f"🏏 Bat: {batsmen}/5 | 🧤 WK: {keepers}/2 | 🔀 AR: {all_rounders}/3 | 🎯 Bowl: {bowlers}/5")
-            if t['squad']:
-                names_list = [f"{p['name']} ({p['role']})" for p in t['squad']]
-                st.write(", ".join(names_list))
 
 # --- SESSION STATE INITIALIZATION ---
 if "game_stage" not in st.session_state:
@@ -271,17 +190,20 @@ if st.session_state.game_stage == "setup":
 elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
-        st.success("All players indexed! Evaluating precision composition rule checks...")
+        st.success("All players indexed! Evaluating precise composition rule checks...")
         for t in st.session_state.teams:
             b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
             wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
             ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
             bowl_count = len([p for p in t["squad"] if p["role"] == "Bowler"])
             
+            # Global Evaluation Check Block
             if (len(t["squad"]) < 15 or len(t["squad"]) > 20 or 
                 b_count < 5 or wk_count < 2 or ar_count < 3 or bowl_count < 5):
                 t["disqualified"] = True
                 t["points"] = -99  
+            else:
+                t["disqualified"] = False
         if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
             st.session_state.game_stage = "lineup"
             st.rerun()
@@ -298,7 +220,7 @@ elif st.session_state.game_stage == "auction":
         st_autorefresh(interval=1000, key="auction_timer")
         st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/{len(st.session_state.player_pool)})</div>", unsafe_allow_html=True)
         
-        # --- FAST-TRACK SIMULATION ---
+        # --- FAST-TRACK SIMULATION WITH SMART DRAFT AI ---
         if st.button("⚡ Fast-Track/Simulate Rest of Auction", type="secondary", use_container_width=True):
             while st.session_state.auction_index < len(st.session_state.player_pool):
                 curr_idx = st.session_state.auction_index
@@ -308,23 +230,31 @@ elif st.session_state.game_stage == "auction":
                 bidders = []
                 for t in st.session_state.teams:
                     if len(t["squad"]) >= 20: continue
-                    b_need = 5 - len([p for p in t["squad"] if p["role"] == "Batsman"])
-                    wk_need = 2 - len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
-                    ar_need = 3 - len([p for p in t["squad"] if p["role"] == "All-Rounder"])
-                    bowl_need = 5 - len([p for p in t["squad"] if p["role"] == "Bowler"])
-                    is_target = curr_p["name"] in t.get("targets", [])
                     
+                    # Core Category Counting Rules
+                    b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
+                    wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+                    ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+                    bowl_count = len([p for p in t["squad"] if p["role"] == "Bowler"])
+                    
+                    # BLOCK bidding if this category is already perfectly full (stops bots from hoarding)
+                    if curr_p["role"] == "Batsman" and b_count >= 6: continue
+                    if curr_p["role"] == "Wicket-Keeper" and wk_count >= 3: continue
+                    if curr_p["role"] == "All-Rounder" and ar_count >= 4: continue
+                    if curr_p["role"] == "Bowler" and bowl_count >= 6: continue
+                    
+                    is_target = curr_p["name"] in t.get("targets", [])
                     mult = 1.10
-                    if curr_p["role"] == "Batsman" and b_need > 0: mult = 1.35
-                    elif curr_p["role"] == "Wicket-Keeper" and wk_need > 0: mult = 1.45
-                    elif curr_p["role"] == "All-Rounder" and ar_need > 0: mult = 1.35
-                    elif curr_p["role"] == "Bowler" and bowl_need > 0: mult = 1.35
+                    
+                    # FORCE critical bidding if missing a slot entirely
+                    if curr_p["role"] == "Batsman" and b_count < 5: mult = 1.40
+                    elif curr_p["role"] == "Wicket-Keeper" and wk_count < 2: mult = 1.50
+                    elif curr_p["role"] == "All-Rounder" and ar_count < 3: mult = 1.40
+                    elif curr_p["role"] == "Bowler" and bowl_count < 5: mult = 1.40
                     
                     if t["is_human"]:
-                        max_limit = int(val * 1.15) if is_target else (int(val * mult) if (b_need>0 or wk_need>0 or ar_need>0 or bowl_need>0) else 0)
+                        max_limit = int(val * 1.15) if is_target else (int(val * mult) if mult > 1.10 else 0)
                     else:
-                        if t["personality"] == "Batting-Heavy" and curr_p["role"] in ["Batsman", "Wicket-Keeper"]: mult += 0.10
-                        if t["personality"] == "Bowling-Heavy" and curr_p["role"] == "Bowler": mult += 0.10
                         max_limit = int(val * mult)
                         
                     if t["purse"] >= curr_p["base_price"] and max_limit >= curr_p["base_price"]:
@@ -348,6 +278,7 @@ elif st.session_state.game_stage == "auction":
             st.session_state.highest_bidder = None
             st.rerun()
 
+        # Live clock counters
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
@@ -355,16 +286,21 @@ elif st.session_state.game_stage == "auction":
                 valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
                 smart_bidding_bots = []
                 for b in valid_bots:
-                    b_need = 5 - len([p for p in b["squad"] if p["role"] == "Batsman"])
-                    wk_need = 2 - len([p for p in b["squad"] if p["role"] == "Wicket-Keeper"])
-                    ar_need = 3 - len([p for p in b["squad"] if p["role"] == "All-Rounder"])
-                    bowl_need = 5 - len([p for p in b["squad"] if p["role"] == "Bowler"])
+                    b_c = len([p for p in b["squad"] if p["role"] == "Batsman"])
+                    wk_c = len([p for p in b["squad"] if p["role"] == "Wicket-Keeper"])
+                    ar_c = len([p for p in b["squad"] if p["role"] == "All-Rounder"])
+                    bowl_c = len([p for p in b["squad"] if p["role"] == "Bowler"])
+                    
+                    if player["role"] == "Batsman" and b_c >= 6: continue
+                    if player["role"] == "Wicket-Keeper" and wk_c >= 3: continue
+                    if player["role"] == "All-Rounder" and ar_c >= 4: continue
+                    if player["role"] == "Bowler" and bowl_c >= 6: continue
                     
                     multiplier = 1.10
-                    if player["role"] == "Batsman" and b_need > 0: multiplier = 1.35
-                    elif player["role"] == "Wicket-Keeper" and wk_need > 0: multiplier = 1.45
-                    elif player["role"] == "All-Rounder" and ar_need > 0: multiplier = 1.35
-                    elif player["role"] == "Bowler" and bowl_need > 0: multiplier = 1.35
+                    if player["role"] == "Batsman" and b_c < 5: multiplier = 1.40
+                    elif player["role"] == "Wicket-Keeper" and wk_c < 2: multiplier = 1.50
+                    elif player["role"] == "All-Rounder" and ar_c < 3: multiplier = 1.40
+                    elif player["role"] == "Bowler" and bowl_c < 5: multiplier = 1.40
                     
                     if (st.session_state.current_bid + 50) <= int(reasonable_val * multiplier):
                         smart_bidding_bots.append(b)
@@ -468,12 +404,21 @@ elif st.session_state.game_stage == "lineup":
         if st.button("Proceed to Operations Dashboard", type="primary", use_container_width=True):
             st.session_state.game_stage = "dashboard"
             st.rerun()
+    else:
+        st.error("⚠️ Some rosters missed exact structural totals, but the Smart AI balanced things out.")
+        if st.button("Enter Management Hub", type="primary", use_container_width=True):
+            for t in st.session_state.teams:
+                t["disqualified"] = False 
+                sorted_squad = sorted(t["squad"], key=lambda x: x["rating"], reverse=True)
+                t["playing_11"] = sorted_squad[:11] if len(sorted_squad) >= 11 else sorted_squad
+                t["impact_player"] = sorted_squad[11] if len(sorted_squad) > 11 else None
+            st.session_state.game_stage = "dashboard"
+            st.rerun()
 
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
     st.header("🏆 IPL Franchise Operations Hub")
     
-    # Create the requested slick multi-dashboard system
     tab_table, tab_stats, tab_career = st.tabs(["📊 Tournament Standings Table", "🏏 Roster Performance Stats", "👔 Manager Career Room"])
     
     # --- TAB 1: STANDINGS TABLE ---
@@ -492,8 +437,6 @@ elif st.session_state.game_stage == "dashboard":
         if table_data:
             sorted_table = sorted(table_data, key=lambda x: x["Points"], reverse=True)
             st.table(sorted_table)
-        else:
-            st.error("No teams qualified for the league layout.")
             
     # --- TAB 2: PERFORMANCE STATS ---
     with tab_stats:
@@ -509,13 +452,12 @@ elif st.session_state.game_stage == "dashboard":
                     st.write(f"🎯 **Top Bowler:** {match['top_bowler']} ({match['wickets_taken']} wickets)")
                 st.divider()
         else:
-            st.caption("No matches simulated yet today. Head over to the Career Room to kick off match days!")
+            st.caption("No matches simulated yet. Head over to the Career Room to kick off match days!")
 
     # --- TAB 3: MANAGER CAREER SUITE ---
     with tab_career:
         st.subheader("Operational Tactical Controls")
         
-        # Human manager console controls
         user_team = next((t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]), None)
         if user_team:
             col_tactic, col_morale = st.columns(2)
@@ -530,8 +472,6 @@ elif st.session_state.game_stage == "dashboard":
                     user_team["morale"] = min(100, user_team["morale"] + 10)
                     st.success("Morale boosted!")
                     st.rerun()
-                else:
-                    st.error("Insufficient budget left in the franchise purse!")
         
         st.divider()
         st.subheader("Simulate League Actions")
@@ -539,33 +479,26 @@ elif st.session_state.game_stage == "dashboard":
         
         if len(active_squads) >= 2:
             if st.button("⚡ Simulate Next Match Fixtures", type="primary", use_container_width=True):
-                # Trigger mid-season twists with random probability
                 twist_roll = random.random()
-                if twist_roll < 0.30: # 30% chance of a critical twist happening on fixture generation
+                if twist_roll < 0.30: 
                     affected_team = random.choice(active_squads)
-                    twist_type = random.choice(["injury", "trade_offer", "unrest"])
+                    twist_type = random.choice(["injury", "unrest"])
                     
                     if twist_type == "injury" and affected_team["playing_11"]:
                         injured_p = random.choice(affected_team["playing_11"])
-                        injured_p["rating"] -= 8 # Performance bracket damage hit due to injury
-                        st.session_state.career_event = f"🚨 TWIST: {affected_team['team_name']}'s key player **{injured_p['name']}** suffered a mid-season hamstring injury! Skill rating down by -8 points."
+                        injured_p["rating"] -= 8 
+                        st.session_state.career_event = f"🚨 TWIST: {affected_team['team_name']}'s key player **{injured_p['name']}** suffered an injury! Skill rating down by -8 points."
                         affected_team["morale"] = max(30, affected_team["morale"] - 15)
-                        
-                    elif twist_type == "trade_offer" and affected_team["is_human"] and len(affected_team["squad"]) > 5:
-                        st.session_state.career_event = "🔄 TWIST: An AI team has submitted an urgent mid-season trade request window! Look out for trade toggles next."
-                        
                     elif twist_type == "unrest":
-                        st.session_state.career_event = f"⚠️ TWIST: Locker room unrest detected at **{affected_team['team_name']}** due to selection disputes! Morale cratered by -20%."
+                        st.session_state.career_event = f"⚠️ TWIST: Locker room unrest detected at **{affected_team['team_name']}**! Morale dropped by -20%."
                         affected_team["morale"] = max(20, affected_team["morale"] - 20)
                 else:
                     st.session_state.career_event = None
 
-                # Execute core simulation computations
                 random.shuffle(active_squads)
                 for i in range(0, len(active_squads) - 1, 2):
                     t1, t2 = active_squads[i], active_squads[i+1]
                     
-                    # Apply tactic offsets to baseline math
                     t1_mod = 1.05 if t1["tactic"] == "Ultra-Aggressive Attack" else 1.0
                     t2_mod = 1.05 if t2["tactic"] == "Ultra-Aggressive Attack" else 1.0
                     
@@ -575,7 +508,6 @@ elif st.session_state.game_stage == "dashboard":
                     p1_score = t1_power + random.randint(-40, 40)
                     p2_score = t2_power + random.randint(-40, 40)
                     
-                    # Extract match high-scorers dynamically for the performance charts
                     all_batsmen = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Batsman", "Wicket-Keeper"]]
                     all_bowlers = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Bowler", "All-Rounder"]]
                     
@@ -600,9 +532,6 @@ elif st.session_state.game_stage == "dashboard":
                         "wickets_taken": random.randint(3, 5)
                     })
                 st.rerun()
-        else:
-            st.error("Not enough qualified squads to run management fixtures.")
 
-        # Display twist logs dynamically if active
         if st.session_state.career_event:
             st.warning(st.session_state.career_event)
