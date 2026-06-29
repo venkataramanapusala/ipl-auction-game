@@ -3,9 +3,6 @@ import random
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# --- STYLES & CONFIG ---
-st.set_page_config(page_title="IPL Live Draft Room", page_icon="🏏", layout="centered")
-
 # --- CUSTOM CSS FOR SLICK DESIGN ---
 st.markdown("""
     <style>
@@ -41,7 +38,7 @@ st.markdown("""
         color: #FFFFFF !important; 
     }
     
-    /* Target Override Streamlit Info Alert Box (Fixes dark blue text bug) */
+    /* Target Override Streamlit Info Alert Box */
     div[data-testid="stNotification"] {
         background-color: #1E293B !important;
         border: 1px solid #334155 !important;
@@ -51,11 +48,27 @@ st.markdown("""
         font-weight: bold !important;
     }
     
-    /* Customization for Select Boxes / Inputs to stand out */
+    /* Customization for Select Boxes / Inputs */
     div[data-baseweb="select"] > div {
         background-color: #1F2937 !important;
         color: white !important;
         border: 1px solid #4B5563 !important;
+    }
+
+    /* FIX FOR THE WHITE BUTTONS MATRIX */
+    .stButton button {
+        background-color: #1F2937 !important;
+        color: #FFFFFF !important;
+        border: 1px solid #4B5563 !important;
+        border-radius: 8px !important;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    /* Subtle hover effect for slick responsiveness */
+    .stButton button:hover {
+        background-color: #374151 !important;
+        border-color: #3B82F6 !important;
+        color: #3B82F6 !important;
     }
     </style>
 """, unsafe_allow_html=True)
