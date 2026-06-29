@@ -234,7 +234,15 @@ if "player_pool" not in st.session_state:
         {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50}
     ]
     random.shuffle(st.session_state.player_pool)
-
+# --- VALUATION HELPER ---
+def get_reasonable_val(player, current_index):
+    random.seed(current_index + 1000)
+    if player["rating"] >= 93: val = random.randint(1350, 1650)
+    elif player["rating"] >= 90: val = random.randint(950, 1300)
+    elif player["rating"] >= 86: val = random.randint(450, 950)
+    else: val = random.randint(80, 400)
+    random.seed() 
+    return val
 def get_player_trait(player):
     if player["rating"] >= 93: return "👑 Legendary Icon Master"
     if player["rating"] <= 80: return "🌱 Debutant Prospect"
