@@ -364,7 +364,7 @@ elif st.session_state.game_stage == "auction":
         
         # --- HEADS-UP LIVE CARD PANEL ---
        # --- HEADS-UP LIVE CARD PANEL ---
-st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/200)</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/200)</div>", unsafe_allow_html=True)
         
         # --- FAST-TRACK SIMULATION ENGINE ---
                  if st.button("⚡ Fast-Track/Simulate Rest of Auction", type="secondary", use_container_width=True):
