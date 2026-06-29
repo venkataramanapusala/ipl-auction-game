@@ -412,7 +412,7 @@ elif st.session_state.game_stage == "auction":
                 t["disqualified"] = False
 
         # Move this all the way back to the left so it has exactly 8 spaces
-        if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
+    if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
             st.session_state.game_stage = "lineup"
             st.rerun()
     else:
