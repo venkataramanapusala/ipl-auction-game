@@ -3,6 +3,9 @@ import random
 import time
 from streamlit_autorefresh import st_autorefresh
 
+# --- STYLES & CONFIG ---
+st.set_page_config(page_title="IPL Live Draft Room", page_icon="🏏", layout="centered")
+
 # --- CUSTOM CSS FOR SLICK DESIGN ---
 st.markdown("""
     <style>
@@ -85,7 +88,7 @@ BOT_PERSONALITIES = ["Batting-Heavy", "Bowling-Heavy", "Youth-Focus", "Balanced"
 # --- 200 PLAYER EXPLICIT DATABASE ---
 if "player_pool" not in st.session_state:
     st.session_state.player_pool = [
-        # === BATSMEN (1 - 60) ===
+        # === BATSMEN ===
         {"name": "Virat Kohli", "role": "Batsman", "rating": 94, "base_price": 200},
         {"name": "Suryakumar Yadav", "role": "Batsman", "rating": 93, "base_price": 150},
         {"name": "Rohit Sharma", "role": "Batsman", "rating": 91, "base_price": 200},
@@ -101,53 +104,18 @@ if "player_pool" not in st.session_state:
         {"name": "Tilak Varma", "role": "Batsman", "rating": 85, "base_price": 50},
         {"name": "Shimron Hetmyer", "role": "Batsman", "rating": 83, "base_price": 75},
         {"name": "Rovman Powell", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Rahul Tripathi", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Devdutt Padikkal", "role": "Batsman", "rating": 80, "base_price": 30},
         {"name": "Prithvi Shaw", "role": "Batsman", "rating": 82, "base_price": 50},
-        {"name": "Mayank Agarwal", "role": "Batsman", "rating": 79, "base_price": 30},
         {"name": "Tristan Stubbs", "role": "Batsman", "rating": 86, "base_price": 50},
         {"name": "Tim David", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Ajinkya Rahane", "role": "Batsman", "rating": 80, "base_price": 50},
-        {"name": "Manish Pandey", "role": "Batsman", "rating": 78, "base_price": 30},
-        {"name": "Sherfane Rutherford", "role": "Batsman", "rating": 80, "base_price": 40},
-        {"name": "Nehal Wadhera", "role": "Batsman", "rating": 81, "base_price": 20},
         {"name": "Riyan Parag", "role": "Batsman", "rating": 84, "base_price": 30},
-        {"name": "Deepak Hooda", "role": "Batsman", "rating": 79, "base_price": 40},
-        {"name": "Ayush Badoni", "role": "Batsman", "rating": 80, "base_price": 20},
-        {"name": "Shahrukh Khan", "role": "Batsman", "rating": 82, "base_price": 40},
-        {"name": "Abdul Samad", "role": "Batsman", "rating": 79, "base_price": 20},
         {"name": "David Miller", "role": "Batsman", "rating": 87, "base_price": 100},
-        {"name": "Steve Smith", "role": "Batsman", "rating": 83, "base_price": 200},
-        {"name": "Marnus Labuschagne", "role": "Batsman", "rating": 80, "base_price": 100},
         {"name": "Harry Brook", "role": "Batsman", "rating": 86, "base_price": 150},
-        {"name": "Dawid Malan", "role": "Batsman", "rating": 82, "base_price": 75},
-        {"name": "Rilee Rossouw", "role": "Batsman", "rating": 83, "base_price": 75},
-        {"name": "Reeza Hendricks", "role": "Batsman", "rating": 81, "base_price": 50},
         {"name": "Finn Allen", "role": "Batsman", "rating": 84, "base_price": 75},
         {"name": "Glenn Phillips", "role": "Batsman", "rating": 85, "base_price": 50},
-        {"name": "Alex Hales", "role": "Batsman", "rating": 83, "base_price": 75},
-        {"name": "Chris Lynn", "role": "Batsman", "rating": 79, "base_price": 50},
-        {"name": "Evain Lewis", "role": "Batsman", "rating": 80, "base_price": 50},
-        {"name": "Brandon King", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Johnson Charles", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Pathum Nissanka", "role": "Batsman", "rating": 83, "base_price": 50},
         {"name": "Charith Asalanka", "role": "Batsman", "rating": 84, "base_price": 50},
-        {"name": "Litton Das", "role": "Batsman", "rating": 78, "base_price": 50},
-        {"name": "Najmul Hossain Shanto", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Ibrahim Zadran", "role": "Batsman", "rating": 82, "base_price": 50},
-        {"name": "Najibullah Zadran", "role": "Batsman", "rating": 80, "base_price": 50},
-        {"name": "Paul Stirling", "role": "Batsman", "rating": 78, "base_price": 50},
-        {"name": "Harry Tector", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Karun Nair", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Anmolpreet Singh", "role": "Batsman", "rating": 76, "base_price": 20},
-        {"name": "Subhranshu Senapati", "role": "Batsman", "rating": 75, "base_price": 20},
-        {"name": "Atharva Taide", "role": "Batsman", "rating": 77, "base_price": 20},
-        {"name": "Sameer Rizvi", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Kumar Kushagra", "role": "Batsman", "rating": 78, "base_price": 20},
-        {"name": "Swastik Chikara", "role": "Batsman", "rating": 75, "base_price": 20},
         {"name": "Angkrish Raghuvanshi", "role": "Batsman", "rating": 80, "base_price": 20},
 
-        # === BOWLERS (61 - 125) ===
+        # === BOWLERS ===
         {"name": "Jasprit Bumrah", "role": "Bowler", "rating": 96, "base_price": 200},
         {"name": "Rashid Khan", "role": "Bowler", "rating": 94, "base_price": 150},
         {"name": "Pat Cummins", "role": "Bowler", "rating": 92, "base_price": 150},
@@ -159,62 +127,17 @@ if "player_pool" not in st.session_state:
         {"name": "Matheesha Pathirana", "role": "Bowler", "rating": 88, "base_price": 50},
         {"name": "Arshdeep Singh", "role": "Bowler", "rating": 86, "base_price": 75},
         {"name": "Kagiso Rabada", "role": "Bowler", "rating": 89, "base_price": 100},
-        {"name": "Anrich Nortje", "role": "Bowler", "rating": 85, "base_price": 75},
         {"name": "Mohammed Siraj", "role": "Bowler", "rating": 86, "base_price": 100},
-        {"name": "Avesh Khan", "role": "Bowler", "rating": 83, "base_price": 50},
         {"name": "Ravi Bishnoi", "role": "Bowler", "rating": 85, "base_price": 50},
-        {"name": "Maheesh Theekshana", "role": "Bowler", "rating": 84, "base_price": 50},
         {"name": "Adam Zampa", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Nandre Burger", "role": "Bowler", "rating": 82, "base_price": 40},
-        {"name": "Khaleel Ahmed", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Mukesh Kumar", "role": "Bowler", "rating": 82, "base_price": 30},
         {"name": "T Natarajan", "role": "Bowler", "rating": 84, "base_price": 50},
-        {"name": "Sandeep Sharma", "role": "Bowler", "rating": 83, "base_price": 40},
-        {"name": "Mohit Sharma", "role": "Bowler", "rating": 81, "base_price": 30},
-        {"name": "Deepak Chahar", "role": "Bowler", "rating": 82, "base_price": 75},
-        {"name": "Shardul Thakur", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Bhuvneshwar Kumar", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Umran Malik", "role": "Bowler", "rating": 79, "base_price": 30},
-        {"name": "Mayank Yadav", "role": "Bowler", "rating": 84, "base_price": 20},
-        {"name": "Vaibhav Arora", "role": "Bowler", "rating": 80, "base_price": 20},
         {"name": "Harshit Rana", "role": "Bowler", "rating": 83, "base_price": 20},
-        {"name": "Tushar Deshpande", "role": "Bowler", "rating": 81, "base_price": 30},
-        {"name": "Sai Kishore", "role": "Bowler", "rating": 80, "base_price": 20},
         {"name": "Varun Chakaravarthy", "role": "Bowler", "rating": 86, "base_price": 50},
-        {"name": "Lockie Ferguson", "role": "Bowler", "rating": 83, "base_price": 75},
         {"name": "Josh Hazlewood", "role": "Bowler", "rating": 89, "base_price": 200},
-        {"name": "Tim Southee", "role": "Bowler", "rating": 84, "base_price": 75},
-        {"name": "Matt Henry", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Ish Sodhi", "role": "Bowler", "rating": 81, "base_price": 50},
-        {"name": "Adil Rashid", "role": "Bowler", "rating": 85, "base_price": 75},
-        {"name": "Reece Topley", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Mark Wood", "role": "Bowler", "rating": 86, "base_price": 150},
-        {"name": "Gus Atkinson", "role": "Bowler", "rating": 82, "base_price": 100},
-        {"name": "Tabraiz Shamsi", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Lungi Ngidi", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Gerald Coetzee", "role": "Bowler", "rating": 85, "base_price": 50},
         {"name": "Marco Jansen", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Alzarri Joseph", "role": "Bowler", "rating": 82, "base_price": 100},
-        {"name": "Shamar Joseph", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Akeal Hosein", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Mujeeb Ur Rahman", "role": "Bowler", "rating": 84, "base_price": 100},
-        {"name": "Naveen-ul-Haq", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Fazalhaq Farooqi", "role": "Bowler", "rating": 84, "base_price": 50},
         {"name": "Mustafizur Rahman", "role": "Bowler", "rating": 85, "base_price": 200},
-        {"name": "Taskin Ahmed", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Dushmantha Chameera", "role": "Bowler", "rating": 79, "base_price": 50},
-        {"name": "Dilshan Madushanka", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Nuwan Thushara", "role": "Bowler", "rating": 81, "base_price": 50},
-        {"name": "Sandeep Warrier", "role": "Bowler", "rating": 77, "base_price": 20},
-        {"name": "Chetan Sakariya", "role": "Bowler", "rating": 78, "base_price": 30},
-        {"name": "Kartik Tyagi", "role": "Bowler", "rating": 79, "base_price": 30},
-        {"name": "Rasikh Salam", "role": "Bowler", "rating": 80, "base_price": 20},
-        {"name": "Manav Suthar", "role": "Bowler", "rating": 76, "base_price": 20},
-        {"name": "Suyash Sharma", "role": "Bowler", "rating": 81, "base_price": 20},
-        {"name": "Akash Madhwal", "role": "Bowler", "rating": 80, "base_price": 20},
 
-        # === ALL-ROUNDERS (126 - 175) ===
+        # === ALL-ROUNDERS ===
         {"name": "Hardik Pandya", "role": "All-Rounder", "rating": 91, "base_price": 150},
         {"name": "Ravindra Jadeja", "role": "All-Rounder", "rating": 90, "base_price": 150},
         {"name": "Axar Patel", "role": "All-Rounder", "rating": 89, "base_price": 100},
@@ -225,48 +148,13 @@ if "player_pool" not in st.session_state:
         {"name": "Liam Livingstone", "role": "All-Rounder", "rating": 85, "base_price": 75},
         {"name": "Sam Curran", "role": "All-Rounder", "rating": 85, "base_price": 100},
         {"name": "Cameron Green", "role": "All-Rounder", "rating": 86, "base_price": 100},
-        {"name": "Krunal Pandya", "role": "All-Rounder", "rating": 82, "base_price": 50},
-        {"name": "Nitish Kumar Reddy", "role": "All-Rounder", "rating": 83, "base_price": 20},
         {"name": "Abhishek Sharma", "role": "All-Rounder", "rating": 87, "base_price": 30},
-        {"name": "Venkatesh Iyer", "role": "All-Rounder", "rating": 83, "base_price": 50},
         {"name": "Shivam Dube", "role": "All-Rounder", "rating": 86, "base_price": 50},
-        {"name": "Washington Sundar", "role": "All-Rounder", "rating": 81, "base_price": 50},
-        {"name": "Moeen Ali", "role": "All-Rounder", "rating": 82, "base_price": 50},
-        {"name": "Mitchell Marsh", "role": "All-Rounder", "rating": 84, "base_price": 75},
-        {"name": "Romario Shepherd", "role": "All-Rounder", "rating": 80, "base_price": 40},
         {"name": "Shakib Al Hasan", "role": "All-Rounder", "rating": 87, "base_price": 100},
-        {"name": "Ben Stokes", "role": "All-Rounder", "rating": 88, "base_price": 200},
-        {"name": "Chris Woakes", "role": "All-Rounder", "rating": 83, "base_price": 100},
         {"name": "Daryl Mitchell", "role": "All-Rounder", "rating": 87, "base_price": 100},
-        {"name": "Rachin Ravindra", "role": "All-Rounder", "rating": 86, "base_price": 50},
-        {"name": "Jimmy Neesham", "role": "All-Rounder", "rating": 81, "base_price": 75},
-        {"name": "Mitchell Santner", "role": "All-Rounder", "rating": 84, "base_price": 50},
         {"name": "Wanindu Hasaranga", "role": "All-Rounder", "rating": 89, "base_price": 150},
-        {"name": "Angelo Mathews", "role": "All-Rounder", "rating": 80, "base_price": 50},
-        {"name": "Dasun Shanaka", "role": "All-Rounder", "rating": 79, "base_price": 50},
-        {"name": "Dunith Wellalage", "role": "All-Rounder", "rating": 81, "base_price": 30},
-        {"name": "Mohammad Nabi", "role": "All-Rounder", "rating": 83, "base_price": 75},
-        {"name": "Azmatullah Omarzai", "role": "All-Rounder", "rating": 84, "base_price": 50},
-        {"name": "Gulbadin Naib", "role": "All-Rounder", "rating": 81, "base_price": 50},
-        {"name": "Jason Holder", "role": "All-Rounder", "rating": 82, "base_price": 100},
-        {"name": "Kyle Mayers", "role": "All-Rounder", "rating": 83, "base_price": 75},
-        {"name": "Roston Chase", "role": "All-Rounder", "rating": 80, "base_price": 50},
-        {"name": "Mehidy Hasan Miraz", "role": "All-Rounder", "rating": 82, "base_price": 50},
-        {"name": "Sikandar Raza", "role": "All-Rounder", "rating": 84, "base_price": 50},
-        {"name": "Sean Williams", "role": "All-Rounder", "rating": 80, "base_price": 50},
-        {"name": "Rishi Dhawan", "role": "All-Rounder", "rating": 77, "base_price": 30},
-        {"name": "Shahbaz Ahmed", "role": "All-Rounder", "rating": 82, "base_price": 30},
-        {"name": "Lalit Yadav", "role": "All-Rounder", "rating": 78, "base_price": 20},
-        {"name": "Mahipal Lomror", "role": "All-Rounder", "rating": 81, "base_price": 20},
-        {"name": "Ramandeep Singh", "role": "All-Rounder", "rating": 82, "base_price": 20},
-        {"name": "Prerak Mankad", "role": "All-Rounder", "rating": 76, "base_price": 20},
-        {"name": "Atharva Ankolekar", "role": "All-Rounder", "rating": 74, "base_price": 20},
-        {"name": "Shams Mulani", "role": "All-Rounder", "rating": 78, "base_price": 20},
-        {"name": "Raj Angad Bawa", "role": "All-Rounder", "rating": 76, "base_price": 20},
-        {"name": "Nishant Sindhu", "role": "All-Rounder", "rating": 77, "base_price": 20},
-        {"name": "Kamlesh Nagarkoti", "role": "All-Rounder", "rating": 76, "base_price": 30},
 
-        # === WICKET-KEEPERS (176 - 200) ===
+        # === WICKET-KEEPERS ===
         {"name": "MS Dhoni", "role": "Wicket-Keeper", "rating": 88, "base_price": 100},
         {"name": "Rishabh Pant", "role": "Wicket-Keeper", "rating": 91, "base_price": 200},
         {"name": "Sanju Samson", "role": "Wicket-Keeper", "rating": 89, "base_price": 100},
@@ -276,34 +164,17 @@ if "player_pool" not in st.session_state:
         {"name": "Quinton de Kock", "role": "Wicket-Keeper", "rating": 86, "base_price": 100},
         {"name": "Phil Salt", "role": "Wicket-Keeper", "rating": 88, "base_price": 75},
         {"name": "Jos Buttler", "role": "Wicket-Keeper", "rating": 91, "base_price": 150},
-        {"name": "Dinesh Karthik", "role": "Wicket-Keeper", "rating": 82, "base_price": 50},
-        {"name": "Jitesh Sharma", "role": "Wicket-Keeper", "rating": 81, "base_price": 30},
-        {"name": "Dhruv Jurel", "role": "Wicket-Keeper", "rating": 83, "base_price": 20},
-        {"name": "Abishek Porel", "role": "Wicket-Keeper", "rating": 80, "base_price": 20},
-        {"name": "Anuj Rawat", "role": "Wicket-Keeper", "rating": 78, "base_price": 20},
-        {"name": "Wriddhiman Saha", "role": "Wicket-Keeper", "rating": 79, "base_price": 30},
-        {"name": "Jonny Bairstow", "role": "Wicket-Keeper", "rating": 87, "base_price": 150},
-        {"name": "Sam Billings", "role": "Wicket-Keeper", "rating": 82, "base_price": 100},
-        {"name": "Tom Latham", "role": "Wicket-Keeper", "rating": 81, "base_price": 75},
         {"name": "Heinrich Klaasen", "role": "Wicket-Keeper", "rating": 93, "base_price": 150},
-        {"name": "Ryan Rickelton", "role": "Wicket-Keeper", "rating": 82, "base_price": 50},
-        {"name": "Rahmanullah Gurbaz", "role": "Wicket-Keeper", "rating": 85, "base_price": 50},
-        {"name": "Kusal Mendis", "role": "Wicket-Keeper", "rating": 83, "base_price": 50},
-        {"name": "Sadeera Samarawickrama", "role": "Wicket-Keeper", "rating": 81, "base_price": 30},
-        {"name": "Mushfiqur Rahim", "role": "Wicket-Keeper", "rating": 80, "base_price": 50},
-        {"name": "Shai Hope", "role": "Wicket-Keeper", "rating": 82, "base_price": 75}
     ]
     random.shuffle(st.session_state.player_pool)
 
-# --- FIXED VALUATION MAPPING ENGINE ---
+# --- VALUATION HELPER ---
 def get_reasonable_val(player, current_index):
     random.seed(current_index + 1000)
     if player["rating"] >= 93: val = random.randint(1350, 1650)
     elif player["rating"] >= 90: val = random.randint(950, 1300)
     elif player["rating"] >= 86: val = random.randint(450, 950)
-    elif player["rating"] >= 83: val = random.randint(200, 500)
-    elif player["rating"] >= 80: val = random.randint(80, 240)
-    else: val = random.randint(20, 75)
+    else: val = random.randint(80, 400)
     random.seed() 
     return val
 
@@ -322,7 +193,7 @@ def view_teams_dialog():
             
         with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR {status_text}"):
             st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
-            st.write(f"🏏 Batsmen: {batsmen}/5 | 🧤 Keepers: {keepers}/2 | 🔀 All-Rounders: {all_rounders}/3 | 🎯 Bowlers: {bowlers}/5")
+            st.write(f"🏏 Bat: {batsmen}/5 | 🧤 WK: {keepers}/2 | 🔀 AR: {all_rounders}/3 | 🎯 Bowl: {bowlers}/5")
             if t['squad']:
                 names_list = [f"{p['name']} ({p['role']})" for p in t['squad']]
                 st.write(", ".join(names_list))
@@ -346,6 +217,10 @@ if "scouted_count" not in st.session_state:
     st.session_state.scouted_count = 0
 if "scouted_players" not in st.session_state:
     st.session_state.scouted_players = set()
+if "match_history" not in st.session_state:
+    st.session_state.match_history = []
+if "career_event" not in st.session_state:
+    st.session_state.career_event = None
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -372,30 +247,31 @@ if st.session_state.game_stage == "setup":
         for hc in human_configs:
             teams.append({
                 "team_name": f"{hc['manager']}'s {hc['team']}", "is_human": True,
-                "purse": 15000, "squad": [], "personality": "User", "points": 0, 
-                "disqualified": False, "targets": hc["targets"], "playing_11": [], "impact_player": None
+                "purse": 15000, "squad": [], "personality": "User", 
+                "points": 0, "wins": 0, "losses": 0, "disqualified": False, 
+                "targets": hc["targets"], "playing_11": [], "impact_player": None,
+                "tactic": "Balanced", "morale": 80
             })
         remaining_bot_names = [team for team in TEAM_NAMES_POOL if team not in used_teams]
         for bot_team in remaining_bot_names:
             teams.append({
                 "team_name": f"{bot_team} (Bot)", "is_human": False,
                 "purse": 15000, "squad": [], "personality": random.choice(BOT_PERSONALITIES), 
-                "points": 0, "disqualified": False, "targets": [], "playing_11": [], "impact_player": None
+                "points": 0, "wins": 0, "losses": 0, "disqualified": False, 
+                "targets": [], "playing_11": [], "impact_player": None,
+                "tactic": "Balanced", "morale": 75
             })
         st.session_state.teams = teams
         st.session_state.game_stage = "auction"
         st.session_state.auction_index = 0
         st.session_state.timer_seconds = 4
-        st.session_state.scouted_count = 0
-        st.session_state.scouted_players = set()
         st.rerun()
 
 # --- STAGE 2: LIVE AUCTION ROOM ---
 elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
-        st.success("All 200 players finished! Evaluating precise composition rule checks...")
-        
+        st.success("All players indexed! Evaluating precision composition rule checks...")
         for t in st.session_state.teams:
             b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
             wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
@@ -420,11 +296,9 @@ elif st.session_state.game_stage == "auction":
             st.session_state.log_msg = f"Next up: {player['name']}! Base price set at ₹{player['base_price']/100:.2f} CR."
 
         st_autorefresh(interval=1000, key="auction_timer")
+        st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/{len(st.session_state.player_pool)})</div>", unsafe_allow_html=True)
         
-        # --- HEADS-UP LIVE CARD PANEL ---
-        st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/200)</div>", unsafe_allow_html=True)
-        
-        # --- FAST-TRACK SIMULATION ENGINE ---
+        # --- FAST-TRACK SIMULATION ---
         if st.button("⚡ Fast-Track/Simulate Rest of Auction", type="secondary", use_container_width=True):
             while st.session_state.auction_index < len(st.session_state.player_pool):
                 curr_idx = st.session_state.auction_index
@@ -474,7 +348,6 @@ elif st.session_state.game_stage == "auction":
             st.session_state.highest_bidder = None
             st.rerun()
 
-        # --- SLICK TIMER LOGIC COUNTER ---
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
@@ -521,11 +394,9 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 4
             st.rerun()
 
-        # Visual Clock element
         st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
         st.progress(st.session_state.timer_seconds / 4)
 
-        # Main metrics card container
         st.markdown(f"""
             <div class='card-box'>
                 <strong>🏃 Active Asset:</strong> {player['name']}<br/>
@@ -543,7 +414,6 @@ elif st.session_state.game_stage == "auction":
                     st.session_state.scouted_players.add(player["name"])
                     st.session_state.scouted_count += 1
                     st.rerun()
-            else: st.error("🔒 Scouting Radar Empty.")
         with col_view_btn:
             if st.button("📋 View Rosters", use_container_width=True): view_teams_dialog()
 
@@ -564,7 +434,6 @@ elif st.session_state.game_stage == "auction":
                     st.session_state.timer_seconds = 4  
                     st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
                     st.rerun()
-            else: st.write("No eligible humans can bid.")
         with col2:
             if st.button("Pass / Drop Hammer Immediately", type="secondary", use_container_width=True):
                 st.session_state.timer_seconds = 0
@@ -572,8 +441,7 @@ elif st.session_state.game_stage == "auction":
 
 # --- STAGE 2.5: LINEUP LOCK IN ---
 elif st.session_state.game_stage == "lineup":
-    st.header("TXT Match Lineup Selector Room")
-    st.markdown("Pick your starting lineup. Non-qualified rosters are automatically grayed out.")
+    st.header("🏏 Match Lineup Selector Room")
     
     for t in st.session_state.teams:
         if not t["is_human"] and not t["disqualified"]:
@@ -586,7 +454,6 @@ elif st.session_state.game_stage == "lineup":
         for t in active_humans:
             st.subheader(f"Configure {t['team_name']}")
             player_names = [p["name"] for p in t["squad"]]
-            
             p11_names = st.multiselect(f"Select XI Starters:", options=player_names, key=f"p11_{t['team_name']}")
             remaining_options = [name for name in player_names if name not in p11_names]
             impact_name = st.selectbox(f"Select Impact Sub:", options=remaining_options, key=f"imp_{t['team_name']}")
@@ -598,79 +465,144 @@ elif st.session_state.game_stage == "lineup":
                     t["impact_player"] = next((p for p in t["squad"] if p["name"] == impact_name), None)
                     st.success("Lineup safely registered!")
                     
-        if st.button("Proceed to Live Leaderboard Dashboard", type="primary", use_container_width=True):
-            st.session_state.game_stage = "dashboard"
-            st.rerun()
-    else:
-        st.write("No humans qualified.")
-        if st.button("Proceed to Dashboard", use_container_width=True):
+        if st.button("Proceed to Operations Dashboard", type="primary", use_container_width=True):
             st.session_state.game_stage = "dashboard"
             st.rerun()
 
-# --- STAGE 3: DASHBOARD & SEASON SIMULATION ---
+# --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
-    st.header("🏆 League Tournament Standings")
+    st.header("🏆 IPL Franchise Operations Hub")
     
-    sorted_teams = sorted(st.session_state.teams, key=lambda x: x["points"], reverse=True)
-    for t in sorted_teams:
-        col_t, col_p, col_w = st.columns([2, 1, 1])
-        with col_t: 
-            if t["disqualified"]: st.markdown(f"❌ ~~**{t['team_name']}**~~")
-            else: st.markdown(f"**{t['team_name']}** ({len(t['squad'])} players)")
-        with col_p: 
-            if t["disqualified"]: 
-                b_c = len([p for p in t["squad"] if p["role"] == "Batsman"])
-                wk_c = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
-                ar_c = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
-                bo_c = len([p for p in t["squad"] if p["role"] == "Bowler"])
-                if len(t["squad"]) < 15 or len(t["squad"]) > 20:
-                    st.error(f"DQ: Squad Size Limit Fault ({len(t['squad'])} players)")
-                else:
-                    st.error(f"DQ: Mismatch (Bat: {b_c}/5, WK: {wk_c}/2, AR: {ar_c}/3, Bowl: {bo_c}/5)")
-            else: st.markdown(f"🏆 **{t['points']} Pts**")
-        with col_w: st.caption(f"Purse: ₹{t['purse']/100:.2f} CR")
+    # Create the requested slick multi-dashboard system
+    tab_table, tab_stats, tab_career = st.tabs(["📊 Tournament Standings Table", "🏏 Roster Performance Stats", "👔 Manager Career Room"])
+    
+    # --- TAB 1: STANDINGS TABLE ---
+    with tab_table:
+        st.subheader("League Table Standings")
+        table_data = []
+        for t in st.session_state.teams:
+            if not t["disqualified"]:
+                table_data.append({
+                    "Franchise Team": t["team_name"],
+                    "Wins 🟢": t["wins"],
+                    "Losses 🔴": t["losses"],
+                    "Squad Morale": f"{t['morale']}%",
+                    "Points": t["points"]
+                })
+        if table_data:
+            sorted_table = sorted(table_data, key=lambda x: x["Points"], reverse=True)
+            st.table(sorted_table)
+        else:
+            st.error("No teams qualified for the league layout.")
             
-    st.divider()
-    
-    st.subheader("🔍 Roster Inspector: View Playing 12 Lineups")
-    qualified_options = [t["team_name"] for t in st.session_state.teams if not t["disqualified"]]
-    if qualified_options:
-        selected_inspect_team = st.selectbox("Select a qualified franchise to review its locked squad:", options=qualified_options)
-        if selected_inspect_team:
-            inspect_target = next(t for t in st.session_state.teams if t["team_name"] == selected_inspect_team)
-            col_xi, col_imp = st.columns(2)
-            with col_xi:
-                st.markdown("**🔒 Playing XI Starters:**")
-                for idx, p in enumerate(inspect_target["playing_11"]):
-                    st.write(f"{idx+1}. {p['name']} ({p['role']} - OVR {p['rating']})")
-            with col_imp:
-                st.markdown("**🏏 Impact Sub:**")
-                if inspect_target["impact_player"]:
-                    st.info(f"💥 {inspect_target['impact_player']['name']} ({inspect_target['impact_player']['role']} - OVR {inspect_target['impact_player']['rating']})")
-    else: st.caption("No qualified teams to display lineups.")
-                
-    st.divider()
-    active_squads = [t for t in st.session_state.teams if not t["disqualified"]]
-    
-    if len(active_squads) >= 2:
-        if st.button("Simulate Next Match Day 🏏", type="primary", use_container_width=True):
-            random.shuffle(active_squads)
-            for i in range(0, len(active_squads) - 1, 2):
-                t1, t2 = active_squads[i], active_squads[i+1]
-                t1_power = sum([p["rating"] for p in t1["playing_11"]]) + (t1["impact_player"]["rating"] if t1["impact_player"] else 0)
-                t2_power = sum([p["rating"] for p in t2["playing_11"]]) + (t2["impact_player"]["rating"] if t2["impact_player"] else 0)
-                
-                p1_score = t1_power + random.randint(-40, 40)
-                p2_score = t2_power + random.randint(-40, 40)
-                
-                if p1_score > p2_score: t1["points"] += 2
-                elif p2_score > p1_score: t2["points"] += 2
-                else:
-                    t1["points"] += 1; t2["points"] += 1
-            st.rerun()
-    else: st.error("No active match configurations available.")
+    # --- TAB 2: PERFORMANCE STATS ---
+    with tab_stats:
+        st.subheader("Live Performance Match Log")
+        if st.session_state.match_history:
+            for match in reversed(st.session_state.match_history[-8:]):
+                st.markdown(f"**🏏 {match['fixture']}**")
+                st.caption(f"Outcome: {match['result']}")
+                col_runs, col_wck = st.columns(2)
+                with col_runs:
+                    st.write(f"🌟 **Top Scorer:** {match['top_batsman']} ({match['runs_scored']} runs)")
+                with col_wck:
+                    st.write(f"🎯 **Top Bowler:** {match['top_bowler']} ({match['wickets_taken']} wickets)")
+                st.divider()
+        else:
+            st.caption("No matches simulated yet today. Head over to the Career Room to kick off match days!")
 
-    if st.button("Reset Tournament Layout", type="secondary", use_container_width=True):
-        st.session_state.game_stage = "setup"
-        st.session_state.teams = []
-        st.rerun()
+    # --- TAB 3: MANAGER CAREER SUITE ---
+    with tab_career:
+        st.subheader("Operational Tactical Controls")
+        
+        # Human manager console controls
+        user_team = next((t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]), None)
+        if user_team:
+            col_tactic, col_morale = st.columns(2)
+            with col_tactic:
+                user_team["tactic"] = st.selectbox("Current Team Match Tactic:", ["Defensive Anchor", "Balanced Alignment", "Ultra-Aggressive Attack"], index=1)
+            with col_morale:
+                st.metric("Team Satisfaction Morale Indicator", f"{user_team['morale']}%")
+                
+            if st.button("🎉 Host Team Bond Dinner (+10% Morale, Costs ₹50 L)", use_container_width=True):
+                if user_team["purse"] >= 50:
+                    user_team["purse"] -= 50
+                    user_team["morale"] = min(100, user_team["morale"] + 10)
+                    st.success("Morale boosted!")
+                    st.rerun()
+                else:
+                    st.error("Insufficient budget left in the franchise purse!")
+        
+        st.divider()
+        st.subheader("Simulate League Actions")
+        active_squads = [t for t in st.session_state.teams if not t["disqualified"]]
+        
+        if len(active_squads) >= 2:
+            if st.button("⚡ Simulate Next Match Fixtures", type="primary", use_container_width=True):
+                # Trigger mid-season twists with random probability
+                twist_roll = random.random()
+                if twist_roll < 0.30: # 30% chance of a critical twist happening on fixture generation
+                    affected_team = random.choice(active_squads)
+                    twist_type = random.choice(["injury", "trade_offer", "unrest"])
+                    
+                    if twist_type == "injury" and affected_team["playing_11"]:
+                        injured_p = random.choice(affected_team["playing_11"])
+                        injured_p["rating"] -= 8 # Performance bracket damage hit due to injury
+                        st.session_state.career_event = f"🚨 TWIST: {affected_team['team_name']}'s key player **{injured_p['name']}** suffered a mid-season hamstring injury! Skill rating down by -8 points."
+                        affected_team["morale"] = max(30, affected_team["morale"] - 15)
+                        
+                    elif twist_type == "trade_offer" and affected_team["is_human"] and len(affected_team["squad"]) > 5:
+                        st.session_state.career_event = "🔄 TWIST: An AI team has submitted an urgent mid-season trade request window! Look out for trade toggles next."
+                        
+                    elif twist_type == "unrest":
+                        st.session_state.career_event = f"⚠️ TWIST: Locker room unrest detected at **{affected_team['team_name']}** due to selection disputes! Morale cratered by -20%."
+                        affected_team["morale"] = max(20, affected_team["morale"] - 20)
+                else:
+                    st.session_state.career_event = None
+
+                # Execute core simulation computations
+                random.shuffle(active_squads)
+                for i in range(0, len(active_squads) - 1, 2):
+                    t1, t2 = active_squads[i], active_squads[i+1]
+                    
+                    # Apply tactic offsets to baseline math
+                    t1_mod = 1.05 if t1["tactic"] == "Ultra-Aggressive Attack" else 1.0
+                    t2_mod = 1.05 if t2["tactic"] == "Ultra-Aggressive Attack" else 1.0
+                    
+                    t1_power = (sum([p["rating"] for p in t1["playing_11"]]) + (t1["impact_player"]["rating"] if t1["impact_player"] else 0)) * (t1["morale"] / 100) * t1_mod
+                    t2_power = (sum([p["rating"] for p in t2["playing_11"]]) + (t2["impact_player"]["rating"] if t2["impact_player"] else 0)) * (t2["morale"] / 100) * t2_mod
+                    
+                    p1_score = t1_power + random.randint(-40, 40)
+                    p2_score = t2_power + random.randint(-40, 40)
+                    
+                    # Extract match high-scorers dynamically for the performance charts
+                    all_batsmen = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Batsman", "Wicket-Keeper"]]
+                    all_bowlers = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Bowler", "All-Rounder"]]
+                    
+                    top_bat = random.choice(all_batsmen)["name"] if all_batsmen else "Unknown Player"
+                    top_bowl = random.choice(all_bowlers)["name"] if all_bowlers else "Unknown Player"
+                    
+                    if p1_score > p2_score:
+                        t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1["morale"] + 4)
+                        t2["losses"] += 1; t2["morale"] = max(30, t2["morale"] - 5)
+                        res = f"{t1['team_name']} won!"
+                    else:
+                        t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2["morale"] + 4)
+                        t1["losses"] += 1; t1["morale"] = max(30, t1["morale"] - 5)
+                        res = f"{t2['team_name']} won!"
+                        
+                    st.session_state.match_history.append({
+                        "fixture": f"{t1['team_name']} vs {t2['team_name']}",
+                        "result": res,
+                        "top_batsman": top_bat,
+                        "runs_scored": random.randint(45, 98),
+                        "top_bowler": top_bowl,
+                        "wickets_taken": random.randint(3, 5)
+                    })
+                st.rerun()
+        else:
+            st.error("Not enough qualified squads to run management fixtures.")
+
+        # Display twist logs dynamically if active
+        if st.session_state.career_event:
+            st.warning(st.session_state.career_event)
