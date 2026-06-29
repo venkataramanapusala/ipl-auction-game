@@ -7,16 +7,56 @@ from streamlit_autorefresh import st_autorefresh
 st.set_page_config(page_title="IPL Live Draft Room", page_icon="🏏", layout="centered")
 
 # --- CUSTOM CSS FOR SLICK DESIGN ---
-# --- CUSTOM CSS FOR SLICK DESIGN ---
 st.markdown("""
     <style>
-    /* Force the main app background to pure black */
+    /* Global Background Fix */
     .stApp {
         background-color: #000000 !important;
     }
-    .big-font { font-size:24px !important; font-weight: bold; color: #3B82F6; }
-    .card-box { padding: 15px; border-radius: 10px; background-color: #111827; border-left: 5px solid #3B82F6; margin-bottom: 10px; color: #FFFFFF; }
-    .timer-text { font-size: 20px; font-weight: bold; color: #EF4444; }
+    
+    /* Typography & Headers */
+    h1, h2, h3, p, label, .stText {
+        color: #FFFFFF !important;
+    }
+    .big-font { 
+        font-size: 26px !important; 
+        font-weight: bold; 
+        color: #3B82F6 !important; 
+        text-shadow: 0px 0px 8px rgba(59, 130, 246, 0.4);
+    }
+    .timer-text { 
+        font-size: 22px; 
+        font-weight: bold; 
+        color: #EF4444 !important; 
+    }
+    
+    /* Player Asset Card Box */
+    .card-box { 
+        padding: 20px; 
+        border-radius: 12px; 
+        background-color: #0F172A; 
+        border: 1px solid #1E293B;
+        border-left: 6px solid #3B82F6; 
+        margin-bottom: 15px; 
+        color: #FFFFFF !important; 
+    }
+    
+    /* Target Override Streamlit Info Alert Box (Fixes dark blue text bug) */
+    div[data-testid="stNotification"] {
+        background-color: #1E293B !important;
+        border: 1px solid #334155 !important;
+    }
+    div[data-testid="stNotification"] p {
+        color: #3B82F6 !important;
+        font-weight: bold !important;
+    }
+    
+    /* Customization for Select Boxes / Inputs to stand out */
+    div[data-baseweb="select"] > div {
+        background-color: #1F2937 !important;
+        color: white !important;
+        border: 1px solid #4B5563 !important;
+    }
     </style>
 """, unsafe_allow_html=True)
 
