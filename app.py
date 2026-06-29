@@ -398,7 +398,7 @@ elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
         st.success("All players indexed! Evaluating precise composition checks...")
-        for t in st.session_state.teams:
+     for t in st.session_state.teams:
             b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
             wk_count = len([p protect in t["squad"] if p["role"] == "Wicket-Keeper"]) if "squad" in t else len([p for p in t.get("squad", []) if p["role"] == "Wicket-Keeper"])
             wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
