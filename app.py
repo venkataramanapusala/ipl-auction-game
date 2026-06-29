@@ -13,7 +13,7 @@ st.markdown("""
     .card-box { padding: 15px; border-radius: 10px; background-color: #F3F4F6; border-left: 5px solid #3B82F6; margin-bottom: 10px; }
     .timer-text { font-size: 20px; font-weight: bold; color: #EF4444; }
     </style>
-""", unsafe_allowed_html=True)
+""", unsafe_allow_html=True)
 
 # --- DATA POOLS ---
 TEAM_NAMES_POOL = [
