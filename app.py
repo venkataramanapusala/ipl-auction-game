@@ -408,11 +408,10 @@ elif st.session_state.game_stage == "auction":
                 b_count < 5 or wk_count < 2 or ar_count < 3 or bowl_count < 5):
                 t["disqualified"] = True
                 t["points"] = -99  
-           else:
+            else:
                 t["disqualified"] = False
 
-        # Move this all the way back to the left so it has exactly 8 spaces
-    if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
+        if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
             st.session_state.game_stage = "lineup"
             st.rerun()
     else:
