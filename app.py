@@ -75,6 +75,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# --- DATA POOLS ---
+TEAM_NAMES_POOL = [
+    "Mumbai Mavericks", "Chennai Kings", "Bangalore Blasters", 
+    "Delhi Dynamos", "Kolkata Knights", "Gujarat Giants", 
+    "Punjab Panthers", "Rajasthan Royals", "Lucknow Lions", "Hyderabad Heroes"
+]
+
+BOT_PERSONALITIES = ["Batting-Heavy", "Bowling-Heavy", "Youth-Focus", "Balanced"]
+
 # --- LARGE SQUAD POOL GENERATOR ---
 if "player_pool" not in st.session_state:
     pool = []
@@ -197,7 +206,6 @@ elif st.session_state.game_stage == "auction":
             ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
             bowl_count = len([p for p in t["squad"] if p["role"] == "Bowler"])
             
-            # Global Evaluation Check Block
             if (len(t["squad"]) < 15 or len(t["squad"]) > 20 or 
                 b_count < 5 or wk_count < 2 or ar_count < 3 or bowl_count < 5):
                 t["disqualified"] = True
@@ -231,13 +239,11 @@ elif st.session_state.game_stage == "auction":
                 for t in st.session_state.teams:
                     if len(t["squad"]) >= 20: continue
                     
-                    # Core Category Counting Rules
                     b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
                     wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
                     ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
                     bowl_count = len([p for p in t["squad"] if p["role"] == "Bowler"])
                     
-                    # BLOCK bidding if this category is already perfectly full (stops bots from hoarding)
                     if curr_p["role"] == "Batsman" and b_count >= 6: continue
                     if curr_p["role"] == "Wicket-Keeper" and wk_count >= 3: continue
                     if curr_p["role"] == "All-Rounder" and ar_count >= 4: continue
@@ -246,7 +252,6 @@ elif st.session_state.game_stage == "auction":
                     is_target = curr_p["name"] in t.get("targets", [])
                     mult = 1.10
                     
-                    # FORCE critical bidding if missing a slot entirely
                     if curr_p["role"] == "Batsman" and b_count < 5: mult = 1.40
                     elif curr_p["role"] == "Wicket-Keeper" and wk_count < 2: mult = 1.50
                     elif curr_p["role"] == "All-Rounder" and ar_count < 3: mult = 1.40
@@ -278,7 +283,6 @@ elif st.session_state.game_stage == "auction":
             st.session_state.highest_bidder = None
             st.rerun()
 
-        # Live clock counters
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
@@ -475,7 +479,7 @@ elif st.session_state.game_stage == "dashboard":
         
         st.divider()
         st.subheader("Simulate League Actions")
-        active_squads = [t for t in st.session_state.teams if not t["disqualified"]]
+        active_squads = st.session_state.teams
         
         if len(active_squads) >= 2:
             if st.button("⚡ Simulate Next Match Fixtures", type="primary", use_container_width=True):
