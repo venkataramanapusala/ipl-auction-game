@@ -367,13 +367,14 @@ elif st.session_state.game_stage == "auction":
         st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/200)</div>", unsafe_allow_html=True)
         
         # --- FAST-TRACK SIMULATION ENGINE ---
-              if st.button("⚡ Fast-Track/Simulate Rest of Auction", type="secondary", use_container_width=True):
-                while st.session_state.auction_index < len(st.session_state.player_pool):
+# --- FAST-TRACK SIMULATION ENGINE ---
+        if st.button("⚡ Fast-Track/Simulate Rest of Auction", type="secondary", use_container_width=True):
+            while st.session_state.auction_index < len(st.session_state.player_pool):
                 curr_idx = st.session_state.auction_index
                 curr_p = st.session_state.player_pool[curr_idx]
                 val = get_reasonable_val(curr_p, curr_idx)
                 
-                bidders = []
+                bidders = []  # <--- Make sure this has 16 spaces (4 spaces more than 'while')
                 for t in st.session_state.teams:
                     if len(t["squad"]) >= 20: continue
                     b_need = 5 - len([p for p in t["squad"] if p["role"] == "Batsman"])
