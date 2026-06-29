@@ -235,6 +235,7 @@ if "player_pool" not in st.session_state:
         {"name": "Mushfiqur Rahim", "role": "Wicket-Keeper", "rating": 80, "base_price": 50},
         {"name": "Shai Hope", "role": "Wicket-Keeper", "rating": 82, "base_price": 75}
     ]
+    random.shuffle(st.session_state.player_pool)
 
 # --- FIXED VALUATION MAPPING ENGINE ---
 def get_reasonable_val(player, current_index):
@@ -282,7 +283,7 @@ if "highest_bidder" not in st.session_state:
 if "log_msg" not in st.session_state:
     st.session_state.log_msg = ""
 if "timer_seconds" not in st.session_state:
-    st.session_state.timer_seconds = 4 # CRITICAL SLICK TIME CHANGE SQUASHED TO 4 SEC
+    st.session_state.timer_seconds = 4
 if "scouted_count" not in st.session_state:
     st.session_state.scouted_count = 0
 if "scouted_players" not in st.session_state:
@@ -363,18 +364,16 @@ elif st.session_state.game_stage == "auction":
         st_autorefresh(interval=1000, key="auction_timer")
         
         # --- HEADS-UP LIVE CARD PANEL ---
-       # --- HEADS-UP LIVE CARD PANEL ---
         st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/200)</div>", unsafe_allow_html=True)
         
         # --- FAST-TRACK SIMULATION ENGINE ---
-# --- FAST-TRACK SIMULATION ENGINE ---
         if st.button("⚡ Fast-Track/Simulate Rest of Auction", type="secondary", use_container_width=True):
             while st.session_state.auction_index < len(st.session_state.player_pool):
                 curr_idx = st.session_state.auction_index
                 curr_p = st.session_state.player_pool[curr_idx]
                 val = get_reasonable_val(curr_p, curr_idx)
                 
-                bidders = []  # <--- Make sure this has 16 spaces (4 spaces more than 'while')
+                bidders = []
                 for t in st.session_state.teams:
                     if len(t["squad"]) >= 20: continue
                     b_need = 5 - len([p for p in t["squad"] if p["role"] == "Batsman"])
@@ -421,7 +420,7 @@ elif st.session_state.game_stage == "auction":
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
-            if bots and random.random() < 0.45: # Slightly more active on 4s clock loops
+            if bots and random.random() < 0.45: 
                 valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
                 smart_bidding_bots = []
                 for b in valid_bots:
@@ -442,7 +441,7 @@ elif st.session_state.game_stage == "auction":
                     counter_bot = random.choice(smart_bidding_bots)
                     st.session_state.current_bid += 50
                     st.session_state.highest_bidder = counter_bot
-                    st.session_state.timer_seconds = 4 # RESET CLOCK TO 4 SEC  
+                    st.session_state.timer_seconds = 4  
                     st.session_state.log_msg = f"🤖 {counter_bot['team_name']} bids ₹{st.session_state.current_bid/100:.2f} CR."
                     st.rerun()
         else:
@@ -461,11 +460,11 @@ elif st.session_state.game_stage == "auction":
             st.session_state.auction_index += 1
             st.session_state.current_bid = 0
             st.session_state.highest_bidder = None
-            st.session_state.timer_seconds = 4 # RESET TO 4 SEC
+            st.session_state.timer_seconds = 4
             st.rerun()
 
         # Visual Clock element
-        st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allowed_html=True)
+        st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
         st.progress(st.session_state.timer_seconds / 4)
 
         # Main metrics card container
@@ -475,7 +474,7 @@ elif st.session_state.game_stage == "auction":
                 <strong>🎯 Specialty Category:</strong> {player['role']}<br/>
                 <strong>📊 Skill OVR Rating:</strong> {player['rating']}
             </div>
-        """, unsafe_allowed_html=True)
+        """, unsafe_allow_html=True)
         
         col_scout, col_view_btn = st.columns([2, 1])
         with col_scout:
@@ -500,14 +499,14 @@ elif st.session_state.game_stage == "auction":
         col1, col2 = st.columns(2)
         with col1:
             if human_options:
-                bidding_manager = st.selectbox("Select Bidding Manager:", options=human_options, label_visibility="collapsed")
-                if st.button("💥 RAISE STAKES (+₹50 L)", type="primary", use_container_width=True):
+                bidding_manager = st.selectbox("Select Bidding Manager:", options=human_options)
+                if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
                     st.session_state.current_bid += 50
                     st.session_state.highest_bidder = next(t for t in st.session_state.teams if t["team_name"] == bidding_manager)
                     st.session_state.timer_seconds = 4  
                     st.session_state.log_msg = f"{bidding_manager} raised bid to ₹{st.session_state.current_bid/100:.2f} CR!"
                     st.rerun()
-            else: st.write("No active human bids available.")
+            else: st.write("No eligible humans can bid.")
         with col2:
             if st.button("Pass / Drop Hammer Immediately", type="secondary", use_container_width=True):
                 st.session_state.timer_seconds = 0
@@ -515,8 +514,8 @@ elif st.session_state.game_stage == "auction":
 
 # --- STAGE 2.5: LINEUP LOCK IN ---
 elif st.session_state.game_stage == "lineup":
-    st.header("🏏 Match Lineup Selector Room")
-    st.markdown("Lock in your core strategy choices to activate tournament match engines.")
+    st.header("TXT Match Lineup Selector Room")
+    st.markdown("Pick your starting lineup. Non-qualified rosters are automatically grayed out.")
     
     for t in st.session_state.teams:
         if not t["is_human"] and not t["disqualified"]:
@@ -561,7 +560,15 @@ elif st.session_state.game_stage == "dashboard":
             if t["disqualified"]: st.markdown(f"❌ ~~**{t['team_name']}**~~")
             else: st.markdown(f"**{t['team_name']}** ({len(t['squad'])} players)")
         with col_p: 
-            if t["disqualified"]: st.error("DISQUALIFIED")
+            if t["disqualified"]: 
+                b_c = len([p for p in t["squad"] if p["role"] == "Batsman"])
+                wk_c = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+                ar_c = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+                bo_c = len([p for p in t["squad"] if p["role"] == "Bowler"])
+                if len(t["squad"]) < 15 or len(t["squad"]) > 20:
+                    st.error(f"DQ: Squad Size Limit Fault ({len(t['squad'])} players)")
+                else:
+                    st.error(f"DQ: Mismatch (Bat: {b_c}/5, WK: {wk_c}/2, AR: {ar_c}/3, Bowl: {bo_c}/5)")
             else: st.markdown(f"🏆 **{t['points']} Pts**")
         with col_w: st.caption(f"Purse: ₹{t['purse']/100:.2f} CR")
             
