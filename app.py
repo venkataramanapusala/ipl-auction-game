@@ -398,7 +398,7 @@ elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
         st.success("All players indexed! Evaluating precise composition checks...")
-    for t in st.session_state.teams:
+        for t in st.session_state.teams:
             b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
             wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
             ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
@@ -410,7 +410,7 @@ elif st.session_state.game_stage == "auction":
                 t["points"] = -99  
             else:
                 t["disqualified"] = False
-
+                
         if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
             st.session_state.game_stage = "lineup"
             st.rerun()
