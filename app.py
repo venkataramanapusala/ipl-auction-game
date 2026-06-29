@@ -113,7 +113,6 @@ if "player_pool" not in st.session_state:
         {"name": "Mohit Sharma", "role": "Bowler", "rating": 81, "base_price": 30},
         {"name": "Deepak Chahar", "role": "Bowler", "rating": 82, "base_price": 75},
         {"name": "Shardul Thakur", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "align": "center"},
         {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "base_price": 50},
         {"name": "Bhuvneshwar Kumar", "role": "Bowler", "rating": 82, "base_price": 50},
         {"name": "Umran Malik", "role": "Bowler", "rating": 79, "base_price": 30},
@@ -368,10 +367,23 @@ if st.session_state.game_stage == "setup":
 elif st.session_state.game_stage == "auction":
     idx = st.session_state.auction_index
     if idx >= len(st.session_state.player_pool):
-        st.success("Draft Concluded!")
-        for t in st.session_state.teams: t["disqualified"] = False
-        st.session_state.game_stage = "lineup"
-        st.rerun()
+        st.success("All players indexed! Evaluating precise composition checks...")
+        for t in st.session_state.teams:
+            b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
+            wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+            ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+            bowl_count = len([p for p in t["squad"] if p["role"] == "Bowler"])
+            
+            if (len(t["squad"]) < 15 or len(t["squad"]) > 20 or 
+                b_count < 5 or wk_count < 2 or ar_count < 3 or bowl_count < 5):
+                t["disqualified"] = True
+                t["points"] = -99  
+            else:
+                t["disqualified"] = False
+                
+        if st.button("Proceed to Lineup Selection", type="primary", use_container_width=True):
+            st.session_state.game_stage = "lineup"
+            st.rerun()
     else:
         player = st.session_state.player_pool[idx]
         reasonable_val = get_reasonable_val(player, idx)
@@ -393,6 +405,7 @@ elif st.session_state.game_stage == "auction":
                 bidders = []
                 for t in st.session_state.teams:
                     if len(t["squad"]) >= 20: continue
+                    
                     b_count = len([p for p in t["squad"] if p["role"] == "Batsman"])
                     wk_count = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
                     ar_count = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
@@ -405,6 +418,7 @@ elif st.session_state.game_stage == "auction":
                     
                     mult = 1.35 if (curr_p["role"] == "Batsman" and b_count < 5) or (curr_p["role"] == "Wicket-Keeper" and wk_count < 2) or (curr_p["role"] == "All-Rounder" and ar_count < 3) or (curr_p["role"] == "Bowler" and bowl_count < 5) else 1.10
                     max_limit = int(val * mult)
+                    
                     if t["purse"] >= curr_p["base_price"] and max_limit >= curr_p["base_price"]:
                         bidders.append((t, max_limit))
                 
@@ -429,20 +443,22 @@ elif st.session_state.game_stage == "auction":
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
-            if bots and random.random() < 0.45:
+            if bots and random.random() < 0.45: 
                 valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
                 if valid_bots:
                     counter_bot = random.choice(valid_bots)
                     st.session_state.current_bid += 50
                     st.session_state.highest_bidder = counter_bot
-                    st.session_state.timer_seconds = 4
+                    st.session_state.timer_seconds = 4  
                     st.session_state.log_msg = f"🤖 {counter_bot['team_name']} bids ₹{st.session_state.current_bid/100:.2f} CR."
                     st.rerun()
         else:
             if st.session_state.highest_bidder:
                 hb = st.session_state.highest_bidder
-                hb["purse"] -= st.session_state.current_bid
-                hb["squad"].append(player)
+                for t in st.session_state.teams:
+                    if t["team_name"] == hb["team_name"]:
+                        t["purse"] -= st.session_state.current_bid
+                        t["squad"].append(player)
             else:
                 cb = [t for t in st.session_state.teams if len(t["squad"]) < 20 and t["purse"] >= player["base_price"]]
                 if cb:
@@ -680,7 +696,7 @@ elif st.session_state.game_stage == "dashboard":
                         st.rerun()
 
         st.divider()
-        st.subheader("Advance Bracket Fixtures")
+        st.subheader("Simulate League Actions")
         
         col_sim1, col_sim2 = st.columns(2)
         with col_sim1:
@@ -691,7 +707,6 @@ elif st.session_state.game_stage == "dashboard":
                 
         with col_sim2:
             if st.button("⚡ Fast Auto-Simulate Remaining Matches", use_container_width=True, key=f"skip_{user_team['team_name']}"):
-                # Core computation loops
                 boost_role = st.session_state.current_venue["boost_role"]
                 boost_amt = st.session_state.current_venue["boost_amount"]
                 
