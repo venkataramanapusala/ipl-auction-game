@@ -245,6 +245,23 @@ def get_reasonable_val(player, current_index):
     random.seed() 
     return val
 
+# --- DEEP-SCOUT TRAIT GENERATION LOGIC ---
+def get_player_trait(player):
+    if player["rating"] >= 93:
+        return "👑 Legendary Icon Master"
+    if player["rating"] <= 80:
+        return f"🌱 Debutant Prospects {player['role']}"
+    
+    if player["role"] == "Batsman":
+        return "💥 Aggressive Finisher" if player["rating"] >= 88 else "🏏 Anchored Technical Batter"
+    elif player["role"] == "Bowler":
+        return "🔥 Express Speed Bowler" if player["rating"] >= 88 else "🎯 Defensive Line Bowler"
+    elif player["role"] == "All-Rounder":
+        return "🔀 Clutch All-Rounder"
+    elif player["role"] == "Wicket-Keeper":
+        return "🧤 Lightning-Fast Stumper"
+    return "🏏 Steady Team Asset"
+
 # --- LIVE ROSTER VIEW DIALOG POPUP ---
 @st.dialog("📋 Current Roster & Budget Review", width="medium")
 def view_teams_dialog():
@@ -261,6 +278,14 @@ def view_teams_dialog():
         with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR ({status_text})"):
             st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
             st.write(f"🏏 Bat: {batsmen}/5 | 🧤 WK: {keepers}/2 | 🔀 AR: {all_rounders}/3 | 🎯 Bowl: {bowlers}/5")
+
+# --- ASSET INSPECTION DIALOG ---
+@st.dialog("🔍 Scout Inspection Profile")
+def inspect_player_dialog(player_obj):
+    st.markdown(f"### {player_obj['name']}")
+    st.markdown(f"**Specialty Role:** {player_obj['role']}")
+    st.markdown(f"**Base Evaluation Skill Rating:** {player_obj['rating']} OVR")
+    st.markdown(f"**Tactical Scout Trait:** `{get_player_trait(player_obj)}`")
 
 # --- SESSION STATE INITIALIZATION ---
 if "game_stage" not in st.session_state:
@@ -306,6 +331,22 @@ if user_team:
             💰 PURSE: ₹{user_team['purse']/100:.2f} CR
         </div>
     """, unsafe_allow_html=True)
+
+# --- GLOBAL MARKDOWN INJECTIONS ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #000000 !important; }
+    h1, h2, h3, p, label, .stText { color: #FFFFFF !important; }
+    .big-font { font-size: 26px !important; font-weight: bold; color: #3B82F6 !important; text-shadow: 0px 0px 8px rgba(59, 130, 246, 0.4); }
+    .timer-text { font-size: 22px; font-weight: bold; color: #EF4444 !important; }
+    .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
+    div[data-testid="stNotification"] { background-color: #1E293B !important; border: 1px solid #334155 !important; }
+    div[data-testid="stNotification"] p { color: #3B82F6 !important; font-weight: bold !important; }
+    div[data-baseweb="select"] > div { background-color: #1F2937 !important; color: white !important; border: 1px solid #4B5563 !important; }
+    .stButton button { background-color: #1F2937 !important; color: #FFFFFF !important; border: 1px solid #4B5563 !important; border-radius: 8px !important; transition: all 0.2s ease-in-out; }
+    .stButton button:hover { background-color: #374151 !important; border-color: #3B82F6 !important; color: #3B82F6 !important; }
+    </style>
+""", unsafe_allow_html=True)
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -495,11 +536,13 @@ elif st.session_state.game_stage == "auction":
         st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
         st.progress(st.session_state.timer_seconds / 4)
 
+        # Added dynamic view trait display on live asset auction card
         st.markdown(f"""
             <div class='card-box'>
                 <strong>🏃 Active Asset:</strong> {player['name']}<br/>
                 <strong>🎯 Specialty Category:</strong> {player['role']}<br/>
-                <strong>📊 Skill OVR Rating:</strong> {player['rating']}
+                <strong>📊 Skill OVR Rating:</strong> {player['rating']}<br/>
+                <strong>💡 Scouting Assessment:</strong> <em>{get_player_trait(player)}</em>
             </div>
         """, unsafe_allow_html=True)
         
@@ -541,6 +584,7 @@ elif st.session_state.game_stage == "auction":
 elif st.session_state.game_stage == "lineup":
     st.header("🏏 Match Lineup Selector Room")
     
+    # Auto-fill AI playing rosters
     for t in st.session_state.teams:
         if not t["is_human"] and not t["disqualified"]:
             sorted_squad = sorted(t["squad"], key=lambda x: x["rating"], reverse=True)
@@ -548,22 +592,46 @@ elif st.session_state.game_stage == "lineup":
             t["impact_player"] = sorted_squad[11] if len(sorted_squad) > 11 else sorted_squad[0]
 
     active_humans = [t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]]
+    
     if active_humans:
-        for t in active_humans:
-            st.subheader(f"Configure {t['team_name']}")
-            player_names = [p["name"] for p in t["squad"]]
-            p11_names = st.multiselect(f"Select XI Starters:", options=player_names, key=f"p11_{t['team_name']}")
-            remaining_options = [name for name in player_names if name not in p11_names]
-            impact_name = st.selectbox(f"Select Impact Sub:", options=remaining_options, key=f"imp_{t['team_name']}")
-            
-            if st.button(f"Lock Lineup for {t['team_name']}"):
-                if len(p11_names) != 11: st.error("Roster counts must hit exactly 11 players!")
-                else:
-                    t["playing_11"] = [p for p in t["squad"] if p["name"] in p11_names]
-                    t["impact_player"] = next((p for p in t["squad"] if p["name"] == impact_name), None)
-                    st.success("Lineup safely registered!")
-                    
+        # CRITICAL FIX: Option to toggle between active human teams
+        human_team_options = {t["team_name"]: t for t in active_humans}
+        selected_human_key = st.selectbox("🎯 Select Human Team to Configure Options:", options=list(human_team_options.keys()))
+        t = human_team_options[selected_human_key]
+        
+        st.markdown("---")
+        st.subheader(f"Configure Squad: {t['team_name']}")
+        player_names = [p["name"] for p in t["squad"]]
+        
+        p11_names = st.multiselect(f"Select XI Starters for {t['team_name']}:", options=player_names, key=f"p11_{t['team_name']}")
+        remaining_options = [name for name in player_names if name not in p11_names]
+        impact_name = st.selectbox(f"Select Impact Sub for {t['team_name']}:", options=remaining_options, key=f"imp_{t['team_name']}")
+        
+        # ADDED VIEW SKILL & TRAITS DIALOG INSPECTION FOR PICKED ROSTER ASSETS
+        col_profile_select, col_profile_btn = st.columns([3, 1])
+        with col_profile_select:
+            inspect_target_name = st.selectbox("🔍 Profile View Asset Check Selector:", options=player_names, key=f"inspect_select_{t['team_name']}")
+        with col_profile_btn:
+            st.write("<div style='padding-top:28px;'></div>", unsafe_allow_html=True)
+            if st.button("🔍 Scout Deep Profile", use_container_width=True, key=f"inspect_btn_{t['team_name']}"):
+                matched_p = next(p for p in t["squad"] if p["name"] == inspect_target_name)
+                inspect_player_dialog(matched_p)
+
+        if st.button(f"Lock Lineup Settings for {t['team_name']}", type="secondary"):
+            if len(p11_names) != 11: 
+                st.error("Roster counts must hit exactly 11 players!")
+            else:
+                t["playing_11"] = [p for p in t["squad"] if p["name"] in p11_names]
+                t["impact_player"] = next((p for p in t["squad"] if p["name"] == impact_name), None)
+                st.success(f"{t['team_name']} lineup safely registered!")
+                
+        st.markdown("---")
         if st.button("Proceed to Operations Dashboard", type="primary", use_container_width=True):
+            # Check if all human teams have filled something out
+            for human in active_humans:
+                if not human["playing_11"]:
+                    sorted_squad = sorted(human["squad"], key=lambda x: x["rating"], reverse=True)
+                    human["playing_11"] = sorted_squad[:11]
             st.session_state.game_stage = "dashboard"
             st.rerun()
     else:
@@ -644,15 +712,23 @@ elif st.session_state.game_stage == "dashboard":
 
     # --- TAB 4: MANAGER CAREER SUITE & TRADES ---
     with tab_career:
-        user_team = next((t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]), None)
+        active_humans = [t for t in st.session_state.teams if t["is_human"] and not t["disqualified"]]
         
+        if active_humans:
+            human_dash_options = {t["team_name"]: t for t in active_humans}
+            selected_dash_key = st.selectbox("👔 Select Manager Profile Console:", options=list(human_dash_options.keys()))
+            user_team = human_dash_options[selected_dash_key]
+        else:
+            user_team = None
+
         # Post Match Press Conferences Interceptor UI
         if st.session_state.press_conference:
             pc = st.session_state.press_conference
             st.warning(f"🎤 **CRITICAL PRESS CONFERENCE CONSOLE:** {pc['situation']}")
             for opt_key, opt_val in pc["options"].items():
                 if st.button(opt_val["text"], key=f"pc_{opt_key}"):
-                    user_team["morale"] = min(100, max(20, user_team["morale"] + opt_val["morale_effect"]))
+                    if user_team:
+                        user_team["morale"] = min(100, max(20, user_team["morale"] + opt_val["morale_effect"]))
                     st.success(opt_val["outcome"])
                     st.session_state.press_conference = None
                     st.rerun()
@@ -662,18 +738,18 @@ elif st.session_state.game_stage == "dashboard":
         if user_team:
             col_tactic, col_morale = st.columns(2)
             with col_tactic:
-                user_team["tactic"] = st.selectbox("Current Team Match Tactic:", ["Defensive Anchor", "Balanced Alignment", "Ultra-Aggressive Attack"], index=1)
+                user_team["tactic"] = st.selectbox("Current Team Match Tactic:", ["Defensive Anchor", "Balanced Alignment", "Ultra-Aggressive Attack"], index=1, key=f"tactic_select_{user_team['team_name']}")
             with col_morale:
-                st.metric("Team Satisfaction Morale Indicator", f"{user_team['morale']}%")
+                st.metric(f"{user_team['team_name']} Morale Indicator", f"{user_team['morale']}%")
                 
-            if st.button("🎉 Host Team Bond Dinner (+10% Morale, Costs ₹50 L)", use_container_width=True):
+            if st.button(f"🎉 Host Team Bond Dinner (+10% Morale, Costs ₹50 L)", use_container_width=True, key=f"dinner_{user_team['team_name']}"):
                 if user_team["purse"] >= 50:
                     user_team["purse"] -= 50
                     user_team["morale"] = min(100, user_team["morale"] + 10)
                     st.success("Morale boosted!")
                     st.rerun()
 
-        # Mid-Season Trade Logic Injection (Locks active between day 4 and day 8)
+        # Mid-Season Trade Logic Injection
         if 4 <= st.session_state.match_day <= 8:
             st.markdown("""
                 <div style='padding:12px; background-color:#065F46; border:1px solid #047857; border-radius:6px; margin: 10px 0;'>
@@ -693,7 +769,7 @@ elif st.session_state.game_stage == "dashboard":
                     st.write(f"Required Investment: ₹{trade_cost/100:.2f} CR")
                 with col_tr2:
                     if user_team and user_team["purse"] >= trade_cost:
-                        if st.button("🤝 Accept Trade Deal"):
+                        if st.button("🤝 Accept Trade Deal", key=f"trade_deal_{user_team['team_name']}"):
                             user_team["purse"] -= trade_cost
                             trade_team["purse"] += trade_cost
                             trade_team["squad"].remove(target_p)
@@ -701,7 +777,7 @@ elif st.session_state.game_stage == "dashboard":
                             st.success(f"Successfully signed {target_p['name']}!")
                             st.rerun()
                     else:
-                        st.caption("Insufficient Pursc Liquility")
+                        st.caption("Insufficient Purse Liquidity")
         
         st.divider()
         st.subheader("Simulate League Actions")
@@ -725,7 +801,7 @@ elif st.session_state.game_stage == "dashboard":
                 else:
                     st.session_state.career_event = None
 
-                # Compute rock-paper-scissors tactic modifiers and pitch criteria boosts
+                # Compute tactic modifiers and venue condition boosts
                 boost_role = st.session_state.current_venue["boost_role"]
                 boost_amt = st.session_state.current_venue["boost_amount"]
 
@@ -774,17 +850,17 @@ elif st.session_state.game_stage == "dashboard":
                         "wickets": wicks_rolled
                     })
 
-                # Setup Press Conference if Human Manager Lost
-                user_check = next(t for t in st.session_state.teams if t["is_human"])
-                last_match = st.session_state.match_history[-1]
-                if user_check["team_name"] in last_match["fixture"] and "won" not in last_match["result"]:
-                    st.session_state.press_conference = {
-                        "situation": "Your squad suffered an embarrassing tactical loss today. Fans are demanding immediate accountability in front of the cameras!",
-                        "options": {
-                            "A": {"text": "🎙️ Blame the roster work ethic (-10% Morale, increases aggression)", "morale_effect": -10, "outcome": "Locker room atmosphere grew icy."},
-                            "B": {"text": "🎙️ Absorb full blame yourself to protect players (+15% Morale)", "morale_effect": 15, "outcome": "Players respect your loyalty! Team morale boosted."}
+                # Setup Press Conference if Selected Human Manager Profile Lost
+                if user_team:
+                    last_match = st.session_state.match_history[-1]
+                    if user_team["team_name"] in last_match["fixture"] and "won" not in last_match["result"]:
+                        st.session_state.press_conference = {
+                            "situation": f"Your squad ({user_team['team_name']}) suffered an embarrassing loss today. The press is demanding tactical accountability!",
+                            "options": {
+                                "A": {"text": "🎙️ Blame the roster work ethic (-10% Morale, increases aggression)", "morale_effect": -10, "outcome": "Locker room atmosphere grew icy."},
+                                "B": {"text": "🎙️ Absorb full blame yourself to protect players (+15% Morale)", "morale_effect": 15, "outcome": "Players respect your loyalty! Team morale boosted."}
+                            }
                         }
-                    }
 
                 st.session_state.match_day += 1
                 st.session_state.current_venue = random.choice(VENUES)
