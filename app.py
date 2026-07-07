@@ -3,8 +3,8 @@ import random
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# --- PREMIUM DASHBOARD CONFIGURATION ---
-st.set_page_config(page_title="IPL Ultimate RPG Manager Simulator", page_icon="🏏", layout="wide")
+# --- ULTIMATE EXECUTIVE DASHBOARD CONFIGURATION ---
+st.set_page_config(page_title="IPL Pro-Manager Simulation Console", page_icon="🏏", layout="wide")
 
 # --- DATA POOLS ---
 TEAM_NAMES_POOL = [
@@ -254,31 +254,6 @@ def get_player_trait(player):
     elif player["role"] == "Wicket-Keeper": return "🧤 Fast Stumper"
     return "🏏 Steady Asset"
 
-# --- ASSET INSPECTION PROFILE DIALOG ---
-@st.dialog("🔍 Scout Inspection Profile")
-def inspect_player_dialog(player_obj):
-    st.markdown(f"### {player_obj['name']}")
-    st.markdown(f"**Specialty Role:** {player_obj['role']}")
-    st.markdown(f"**Base Evaluation Skill Rating:** {player_obj['rating']} OVR")
-    st.markdown(f"**Tactical Scout Trait:** `{get_player_trait(player_obj)}`")
-
-# --- LIVE ROSTER VIEW DIALOG POPUP ---
-@st.dialog("📋 Current Roster & Budget Review", width="medium")
-def view_teams_dialog():
-    st.write("Review team spending status and compositional category balance:")
-    for t in st.session_state.teams:
-        batsmen = len([p for p in t["squad"] if p["role"] == "Batsman"])
-        keepers = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
-        all_rounders = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
-        bowlers = len([p for p in t["squad"] if p["role"] == "Bowler"])
-        
-        status_text = "⚠️ SQUAD MISMATCH" if (batsmen < 5 or keepers < 2 or all_rounders < 3 or bowlers < 5) else "✅ VALID"
-        if len(t["squad"]) > 20: status_text = "⚠️ OVER SIGNED"
-            
-        with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR ({status_text})"):
-            st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
-            st.write(f"🏏 Bat: {batsmen}/5 | 🧤 WK: {keepers}/2 | 🔀 AR: {all_rounders}/3 | 🎯 Bowl: {bowlers}/5")
-
 # --- SESSION STATE INITIALIZATION ---
 if "game_stage" not in st.session_state:
     st.session_state.game_stage = "setup"
@@ -318,16 +293,16 @@ if "live_match_state" not in st.session_state:
 # --- STYLING CUSTOM MATRIX RULES (THE PURE DESIGN REHAUL) ---
 st.markdown("""
     <style>
-    .stApp { background-color: #05070F !important; }
-    h1, h2, h3, h4, h5, p, label, .stText, [data-testid="stMetricValue"] { color: #FFFFFF !important; }
+    .stApp { background-color: #030712 !important; }
+    h1, h2, h3, h4, h5, p, label, .stText, [data-testid="stMetricValue"] { color: #FFFFFF !important; font-family: 'Inter', sans-serif !important; }
     
     /* Sleek KPI Cards Styling */
     div[data-testid="stMetric"] {
         background: linear-gradient(135deg, #0F172A, #1E293B) !important;
-        border: 1px solid #334155 !important;
+        border: 1px solid #10B981 !important;
         border-radius: 12px !important;
-        padding: 15px !important;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+        padding: 18px !important;
+        box-shadow: 0 4px 20px rgba(16,185,129,0.1) !important;
     }
     
     /* Glassmorphism News Cards */
@@ -336,32 +311,33 @@ st.markdown("""
         border-radius: 16px;
         background-color: #0F172A;
         border: 1px solid #1E293B;
-        border-left: 6px solid #2563EB;
+        border-left: 6px solid #3B82F6;
         margin-bottom: 20px;
-        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
     }
     
-    .news-title { font-size: 18px !important; font-weight: bold; color: #60A5FA !important; margin-bottom: 6px; }
-    .news-headline { font-size: 22px !important; font-weight: 800; color: #FFFFFF !important; line-height: 1.3; }
+    .news-title { font-size: 14px !important; font-weight: 700; color: #3B82F6 !important; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .news-headline { font-size: 24px !important; font-weight: 800; color: #FFFFFF !important; line-height: 1.3; }
     
     /* Customization for Select Boxes & Controls */
-    div[data-baseweb="select"] > div { background-color: #1E293B !important; color: white !important; border: 1px solid #475569 !important; border-radius: 8px !important; }
+    div[data-baseweb="select"] > div { background-color: #0F172A !important; color: white !important; border: 1px solid #334155 !important; border-radius: 8px !important; }
     
     /* Modernized Button Architecture */
     .stButton button {
-        background: linear-gradient(135deg, #1E293B, #334155) !important;
+        background: linear-gradient(135deg, #1E293B, #0F172A) !important;
         color: #FFFFFF !important;
-        border: 1px solid #475569 !important;
+        border: 1px solid #334155 !important;
         border-radius: 8px !important;
-        font-weight: 600 !important;
-        padding: 10px 24px !important;
-        transition: all 0.3s ease !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px;
+        padding: 12px 28px !important;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
     .stButton button:hover {
-        background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
-        border-color: #3B82F6 !important;
+        background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important;
+        border-color: #60A5FA !important;
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+        box-shadow: 0 8px 20px rgba(59,130,246,0.4);
     }
     </style>
 """, unsafe_allow_html=True)
@@ -371,16 +347,16 @@ active_humans = [t for t in st.session_state.teams if t["is_human"]]
 if active_humans:
     purse_texts = "<br/>".join([f"{h['team_name'].split('\'s ')[0]}: ₹{h['purse']/100:.2f}CR" for h in active_humans])
     st.markdown(f"""
-        <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E3A8A, #3B82F6); 
-                    color: white; padding: 12px 20px; border-radius: 10px; font-weight: bold; 
-                    box-shadow: 0px 4px 15px rgba(59, 130, 246, 0.5); z-index: 9999; border: 1px solid #60A5FA; font-size:12px;'>
-            💰 SQUAD PURSES:<br/>{purse_texts}
+        <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E1B4B, #312E81); 
+                    color: white; padding: 14px 22px; border-radius: 12px; font-weight: 800; 
+                    box-shadow: 0px 8px 25px rgba(49, 46, 129, 0.6); z-index: 9999; border: 1px solid #4338CA; font-size:12px; letter-spacing:0.5px;'>
+            💼 LIQUIDITY POOL:<br/>{purse_texts}
         </div>
     """, unsafe_allow_html=True)
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
-    st.header("👑 IPL Premium Draft Room Manager")
+    st.header("🎮 IPL Premium Draft Room Manager")
     num_humans = st.slider("How many human players?", min_value=1, max_value=4, value=1)
     
     human_configs = []
@@ -541,9 +517,9 @@ elif st.session_state.game_stage == "dashboard":
 
     # VENUE DESIGN METADATA
     st.markdown(f"""
-        <div style='padding: 18px; border-radius: 14px; background: linear-gradient(135deg, #1E1B4B, #312E81); border: 1px solid #4338CA; margin-bottom: 24px;'>
+        <div style='padding: 20px; border-radius: 14px; background: linear-gradient(135deg, #1E1B4B, #0F172A); border: 1px solid #3B82F6; margin-bottom: 24px;'>
             <h4 style='margin:0; color:#38BDF8; font-weight:800; letter-spacing:0.5px;'>🏟️ CURRENT MATCHDAY ENVIRONMENT: {st.session_state.current_venue['name']}</h4>
-            <p style='margin:6px 0 0 0; font-size:15px; color:#E0E7FF;'>{st.session_state.current_venue['desc']}</p>
+            <p style='margin:6px 0 0 0; font-size:15px; color:#94A3B8;'>{st.session_state.current_venue['desc']}</p>
         </div>
     """, unsafe_allow_html=True)
 
@@ -557,20 +533,20 @@ elif st.session_state.game_stage == "dashboard":
             for idx, match in enumerate(reversed(st.session_state.match_history)):
                 st.markdown(f"""
                     <div class='news-box'>
-                        <div class='news-title'>🎯 FIXTURE ROUND LOG</div>
+                        <div class='news-title'>🎯 LIVE GAME SUMMARY WIRE</div>
                         <div class='news-headline'>{match['result']}</div>
-                        <p style='color: #94A3B8; font-size: 14px; margin-top: 4px;'>Matchup: {match['fixture']}</p>
+                        <p style='color: #64748B; font-size: 14px; margin-top: 4px; font-weight:600;'>Fixture Series: {match['fixture']}</p>
                     </div>
                 """, unsafe_allow_html=True)
                 
                 with st.expander(f"📊 Expand Complete Strategic Innings Scorecard"):
                     col_sc1, col_sc2 = st.columns(2)
                     with col_sc1:
-                        st.markdown("<h5 style='color:#60A5FA;'>🏏 Innings 1 Performance</h5>", unsafe_allow_html=True)
+                        st.markdown("<h5 style='color:#38BDF8; font-weight:700;'>🏏 Innings 1 Performance</h5>", unsafe_allow_html=True)
                         st.metric("Innings Total Runs", match.get('team1_score', '184/4'))
                         st.caption(f"⭐ Key Partnership: {match.get('top_batsman','Virat Kohli')} ({match.get('runs',68)} Runs)")
                     with col_sc2:
-                        st.markdown("<h5 style='color:#F43F5E;'>🎯 Innings 2 Defense</h5>", unsafe_allow_html=True)
+                        st.markdown("<h5 style='color:#34D399; font-weight:700;'>🎯 Innings 2 Defense</h5>", unsafe_allow_html=True)
                         st.metric("Target Defense Score", match.get('team2_score', '152/10'))
                         st.caption(f"⚡ Lead Bowler Spell: {match.get('top_bowler','Jasprit Bumrah')} ({match.get('wickets',3)} Wickets)")
                 st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
@@ -584,7 +560,6 @@ elif st.session_state.game_stage == "dashboard":
         selected_manager = st.selectbox("Manager Account Selector Profile:", options=[h["team_name"] for h in human_squads])
         t = next(team for team in human_squads if team["team_name"] == selected_manager)
         
-        # Sidelined grid setup mapping rules
         col_selects, col_preview = st.columns([2, 3])
         
         with col_selects:
@@ -604,17 +579,18 @@ elif st.session_state.game_stage == "dashboard":
                 else:
                     t["playing_11"] = [player_map[n] for n in new_p11]
                     t["impact_player"] = player_map[new_sub] if new_sub else None
-                    st.success("Lineup safely rewritten! Ready for competitive bracket fixtures.")
+                    st.success("Lineup safely rewritten! Ready for competitive field fixtures.")
 
         with col_preview:
             st.markdown("##### 📋 Complete Squad Roster Sheet & Form Indicators")
             for p in t["squad"]:
                 is_starter = "⭐ Starter XI" if p in t["playing_11"] else ("🔄 Impact Sub" if t["impact_player"] and p["name"] == t["impact_player"]["name"] else "📋 Bench Reserve")
-                color_tag = "#60A5FA" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#94A3B8")
+                color_tag = "#38BDF8" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#475569")
                 st.markdown(f"""
-                    <div style='padding:10px; border-radius:8px; background-color:#1E293B; margin-bottom:8px; border-left:4px solid {color_tag};'>
-                        <strong>{p['name']}</strong> — OVR {p['rating']} ({p['role']})<br/>
-                        <span style='font-size:12px; color:#CBD5E1;'>Trait: {get_player_trait(p)} | Allocation: {is_starter}</span>
+                    <div style='padding:12px; border-radius:10px; background-color:#0F172A; border:1px solid #1E293B; margin-bottom:8px; border-left:5px solid {color_tag};'>
+                        <span style='float:right; font-weight:800; color:#34D399;'>OVR {p['rating']}</span>
+                        <strong style='font-size:16px;'>{p['name']}</strong> — <span style='color:#94A3B8; font-weight:600;'>{p['role']}</span><br/>
+                        <span style='font-size:13px; color:#64748B; font-weight:500;'>Strategic Trait: {get_player_trait(p)} | Assignment Allocation: {is_starter}</span>
                     </div>
                 """, unsafe_allow_html=True)
 
@@ -652,7 +628,6 @@ elif st.session_state.game_stage == "dashboard":
 
         st.subheader("Simulate Active Fixture Matches")
         
-        # Render clean side by side corporate option metrics layout
         if user_team:
             col_met1, col_met2, col_met3 = st.columns(3)
             with col_met1: st.metric("Current Franchise Points", user_team["points"])
