@@ -234,6 +234,16 @@ if "player_pool" not in st.session_state:
         {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50}
     ]
     random.shuffle(st.session_state.player_pool)
+   
+    # --- FIXED HIGHEST BIDDER METRIC DISPLAY ---
+        leader_name = st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'
+        st.metric(
+            label="Current High Bid", 
+            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
+            delta=f"Active Leader: {leader_name}",
+            delta_color="normal"
+        )
+        st.info(st.session_state.log_msg)
 
 # --- VALUATION HELPER ---
 def get_reasonable_val(player, current_index):
