@@ -234,16 +234,6 @@ if "player_pool" not in st.session_state:
         {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50}
     ]
     random.shuffle(st.session_state.player_pool)
-   
-    # --- FIXED HIGHEST BIDDER METRIC DISPLAY ---
-        leader_name = st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'
-        st.metric(
-            label="Current High Bid", 
-            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
-            delta=f"Active Leader: {leader_name}",
-            delta_color="normal"
-        )
-        st.info(st.session_state.log_msg)
 
 # --- VALUATION HELPER ---
 def get_reasonable_val(player, current_index):
@@ -420,10 +410,16 @@ elif st.session_state.game_stage == "auction":
 
         st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
         st.progress(st.session_state.timer_seconds / 4)
+st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
+        
+        # Insert the live leader metric tracker here
+        st.metric(
+            label="Current High Bid Status", 
+            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
+            delta=f"Current Leader: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'}"
+        )
 
-        st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
-        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-        if human_teams_bidding:
+        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]:
             if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
                 st.session_state.current_bid += 50
                 st.session_state.highest_bidder = human_teams_bidding[0]
