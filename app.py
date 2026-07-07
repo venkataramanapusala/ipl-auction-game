@@ -408,11 +408,16 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 4
             st.rerun()
 
-        st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
-        st.progress(st.session_state.timer_seconds / 4)
-st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
+      st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
         
-        # Insert the live leader metric tracker here
+        # Fixed: Exactly 8 spaces of indentation to match the parent block
+        st.metric(
+            label="Current High Bid Status", 
+            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
+            delta=f"Current Leader: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'}"
+        )
+
+        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
         st.metric(
             label="Current High Bid Status", 
             value=f"₹{st.session_state.current_bid/100:.2f} CR", 
