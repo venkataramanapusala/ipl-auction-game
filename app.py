@@ -254,6 +254,31 @@ def get_player_trait(player):
     elif player["role"] == "Wicket-Keeper": return "🧤 Fast Stumper"
     return "🏏 Steady Asset"
 
+# --- ASSET INSPECTION PROFILE DIALOG ---
+@st.dialog("🔍 Scout Inspection Profile")
+def inspect_player_dialog(player_obj):
+    st.markdown(f"### {player_obj['name']}")
+    st.markdown(f"**Specialty Role:** {player_obj['role']}")
+    st.markdown(f"**Base Evaluation Skill Rating:** {player_obj['rating']} OVR")
+    st.markdown(f"**Tactical Scout Trait:** `{get_player_trait(player_obj)}`")
+
+# --- LIVE ROSTER VIEW DIALOG POPUP ---
+@st.dialog("📋 Current Roster & Budget Review", width="medium")
+def view_teams_dialog():
+    st.write("Review team spending status and compositional category balance:")
+    for t in st.session_state.teams:
+        batsmen = len([p for p in t["squad"] if p["role"] == "Batsman"])
+        keepers = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
+        all_rounders = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
+        bowlers = len([p for p in t["squad"] if p["role"] == "Bowler"])
+        
+        status_text = "⚠️ SQUAD MISMATCH" if (batsmen < 5 or keepers < 2 or all_rounders < 3 or bowlers < 5) else "✅ VALID"
+        if len(t["squad"]) > 20: status_text = "⚠️ OVER SIGNED"
+            
+        with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR ({status_text})"):
+            st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
+            st.write(f"🏏 Bat: {batsmen}/5 | 🧤 WK: {keepers}/2 | 🔀 AR: {all_rounders}/3 | 🎯 Bowl: {bowlers}/5")
+
 # --- SESSION STATE INITIALIZATION ---
 if "game_stage" not in st.session_state:
     st.session_state.game_stage = "setup"
@@ -310,7 +335,7 @@ st.markdown("""
     .big-font { font-size: 26px !important; font-weight: bold; color: #3B82F6 !important; text-shadow: 0px 0px 8px rgba(59, 130, 246, 0.4); }
     .timer-text { font-size: 22px; font-weight: bold; color: #EF4444 !important; }
     .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
-    .stButton button { background-color: #1F2937 !important; color: #FFFFFF !important; border: 1px solid #4B5563 !important; border-radius: 8px !important; }
+    .stButton button { background-color: #1F2937 !important; color: #FFFFFF !important; border: 1px solid #4B5563 !important; border-radius: 8px !important; transition: all 0.2s ease-in-out; }
     .stButton button:hover { background-color: #374151 !important; border-color: #3B82F6 !important; color: #3B82F6 !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -410,6 +435,9 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 4
             st.rerun()
 
+        st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
+        st.progress(st.session_state.timer_seconds / 4)
+
         st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
         human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
         if human_teams_bidding:
@@ -486,7 +514,6 @@ elif st.session_state.game_stage == "dashboard":
                 st.markdown(f"##### 🎯 {match['fixture']}")
                 st.success(f"BREAKING NEWS: {match['result']}")
                 
-                # Interactive scorecard drop expansion block
                 with st.expander(f"📊 View Match Day Scorecard"):
                     col_sc1, col_tr, col_sc2 = st.columns([2,1,2])
                     with col_sc1:
@@ -501,7 +528,7 @@ elif st.session_state.game_stage == "dashboard":
         else:
             st.info("Tournament matches haven't started yet! Head to the Office Suite tab to begin the tour.")
 
-    # --- TAB 2: DEDICATED ROSTER SQUAD HUB (CHANGE PLAYING 12 ANYTIME) ---
+    # --- TAB 2: DEDICATED ROSTER SQUAD HUB ---
     with tab_roster:
         st.subheader("👥 Franchise Player Contract Hub")
         human_squads = [t for t in st.session_state.teams if t["is_human"]]
@@ -511,7 +538,6 @@ elif st.session_state.game_stage == "dashboard":
         st.write(f"Current Pitch Modifier: **{st.session_state.current_venue['name']}**")
         player_map = {p["name"]: p for p in t["squad"]}
         
-        # Pull or initialize arrays elegantly inside the hub directly
         current_p11 = [p["name"] for p in t["playing_11"]] if t["playing_11"] else list(player_map.keys())[:11]
         
         st.markdown("##### ⚙️ Lock Starters Strategy Layout")
@@ -584,7 +610,6 @@ elif st.session_state.game_stage == "dashboard":
                 boost_role = st.session_state.current_venue["boost_role"]
                 boost_amt = st.session_state.current_venue["boost_amount"]
                 
-                # Match loop runs cleanly using active lineups set from the hub tab
                 random.shuffle(st.session_state.teams)
                 for i in range(0, len(st.session_state.teams) - 1, 2):
                     t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
