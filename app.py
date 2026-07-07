@@ -3,8 +3,8 @@ import random
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# --- STYLES & CONFIG ---
-st.set_page_config(page_title="IPL Ultimate RPG Manager Simulator", page_icon="🏏", layout="centered")
+# --- PREMIUM DASHBOARD CONFIGURATION ---
+st.set_page_config(page_title="IPL Ultimate RPG Manager Simulator", page_icon="🏏", layout="wide")
 
 # --- DATA POOLS ---
 TEAM_NAMES_POOL = [
@@ -315,6 +315,57 @@ if "press_conference" not in st.session_state:
 if "live_match_state" not in st.session_state:
     st.session_state.live_match_state = None
 
+# --- STYLING CUSTOM MATRIX RULES (THE PURE DESIGN REHAUL) ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #05070F !important; }
+    h1, h2, h3, h4, h5, p, label, .stText, [data-testid="stMetricValue"] { color: #FFFFFF !important; }
+    
+    /* Sleek KPI Cards Styling */
+    div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, #0F172A, #1E293B) !important;
+        border: 1px solid #334155 !important;
+        border-radius: 12px !important;
+        padding: 15px !important;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    }
+    
+    /* Glassmorphism News Cards */
+    .news-box {
+        padding: 24px;
+        border-radius: 16px;
+        background-color: #0F172A;
+        border: 1px solid #1E293B;
+        border-left: 6px solid #2563EB;
+        margin-bottom: 20px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    
+    .news-title { font-size: 18px !important; font-weight: bold; color: #60A5FA !important; margin-bottom: 6px; }
+    .news-headline { font-size: 22px !important; font-weight: 800; color: #FFFFFF !important; line-height: 1.3; }
+    
+    /* Customization for Select Boxes & Controls */
+    div[data-baseweb="select"] > div { background-color: #1E293B !important; color: white !important; border: 1px solid #475569 !important; border-radius: 8px !important; }
+    
+    /* Modernized Button Architecture */
+    .stButton button {
+        background: linear-gradient(135deg, #1E293B, #334155) !important;
+        color: #FFFFFF !important;
+        border: 1px solid #475569 !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        padding: 10px 24px !important;
+        transition: all 0.3s ease !important;
+    }
+    .stButton button:hover {
+        background: linear-gradient(135deg, #2563EB, #1D4ED8) !important;
+        border-color: #3B82F6 !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(37,99,235,0.4);
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # --- FLOATING CORNER PURSE OVERLAY CSS ---
 active_humans = [t for t in st.session_state.teams if t["is_human"]]
 if active_humans:
@@ -326,19 +377,6 @@ if active_humans:
             💰 SQUAD PURSES:<br/>{purse_texts}
         </div>
     """, unsafe_allow_html=True)
-
-# --- GLOBAL DARK CSS THEME ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #000000 !important; }
-    h1, h2, h3, p, label, .stText { color: #FFFFFF !important; }
-    .big-font { font-size: 26px !important; font-weight: bold; color: #3B82F6 !important; text-shadow: 0px 0px 8px rgba(59, 130, 246, 0.4); }
-    .timer-text { font-size: 22px; font-weight: bold; color: #EF4444 !important; }
-    .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
-    .stButton button { background-color: #1F2937 !important; color: #FFFFFF !important; border: 1px solid #4B5563 !important; border-radius: 8px !important; transition: all 0.2s ease-in-out; }
-    .stButton button:hover { background-color: #374151 !important; border-color: #3B82F6 !important; color: #3B82F6 !important; }
-    </style>
-""", unsafe_allow_html=True)
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -501,73 +539,92 @@ elif st.session_state.game_stage == "dashboard":
             st.rerun()
         st.stop()
 
-    st.header(f"🏆 IPL Franchise Operations Hub — Day {st.session_state.match_day}/14")
-    
-    # NAVIGATION ZONE
+    # VENUE DESIGN METADATA
+    st.markdown(f"""
+        <div style='padding: 18px; border-radius: 14px; background: linear-gradient(135deg, #1E1B4B, #312E81); border: 1px solid #4338CA; margin-bottom: 24px;'>
+            <h4 style='margin:0; color:#38BDF8; font-weight:800; letter-spacing:0.5px;'>🏟️ CURRENT MATCHDAY ENVIRONMENT: {st.session_state.current_venue['name']}</h4>
+            <p style='margin:6px 0 0 0; font-size:15px; color:#E0E7FF;'>{st.session_state.current_venue['desc']}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    # NAVIGATION TABS ARRAY
     tab_news, tab_roster, tab_table, tab_caps, tab_career = st.tabs(["📰 Media Newsroom", "👥 Roster Player Hub", "📊 League Standings", "👑 Cap Races", "👔 Office Suite"])
     
-    # --- TAB 1: MEDIA NEWSROOM & SCORECARDS ---
+    # --- TAB 1: MEDIA NEWSROOM & DUAL COLUMN SCORECARDS ---
     with tab_news:
         st.subheader("📰 Cricket Daily Headlines")
         if st.session_state.match_history:
             for idx, match in enumerate(reversed(st.session_state.match_history)):
-                st.markdown(f"##### 🎯 {match['fixture']}")
-                st.success(f"BREAKING NEWS: {match['result']}")
+                st.markdown(f"""
+                    <div class='news-box'>
+                        <div class='news-title'>🎯 FIXTURE ROUND LOG</div>
+                        <div class='news-headline'>{match['result']}</div>
+                        <p style='color: #94A3B8; font-size: 14px; margin-top: 4px;'>Matchup: {match['fixture']}</p>
+                    </div>
+                """, unsafe_allow_html=True)
                 
-                with st.expander(f"📊 View Match Day Scorecard"):
-                    col_sc1, col_tr, col_sc2 = st.columns([2,1,2])
+                with st.expander(f"📊 Expand Complete Strategic Innings Scorecard"):
+                    col_sc1, col_sc2 = st.columns(2)
                     with col_sc1:
-                        st.write(f"**Innings 1**")
-                        st.write(f"Score: {match.get('team1_score', '184/4')}")
-                        st.caption(f"Top Batter: {match.get('top_batsman','Virat Kohli')} ({match.get('runs',68)} Runs)")
+                        st.markdown("<h5 style='color:#60A5FA;'>🏏 Innings 1 Performance</h5>", unsafe_allow_html=True)
+                        st.metric("Innings Total Runs", match.get('team1_score', '184/4'))
+                        st.caption(f"⭐ Key Partnership: {match.get('top_batsman','Virat Kohli')} ({match.get('runs',68)} Runs)")
                     with col_sc2:
-                        st.write(f"**Innings 2**")
-                        st.write(f"Score: {match.get('team2_score', '152/10')}")
-                        st.caption(f"Top Spell: {match.get('top_bowler','Jasprit Bumrah')} ({match.get('wickets',3)} Wickets)")
-                st.divider()
+                        st.markdown("<h5 style='color:#F43F5E;'>🎯 Innings 2 Defense</h5>", unsafe_allow_html=True)
+                        st.metric("Target Defense Score", match.get('team2_score', '152/10'))
+                        st.caption(f"⚡ Lead Bowler Spell: {match.get('top_bowler','Jasprit Bumrah')} ({match.get('wickets',3)} Wickets)")
+                st.markdown("<div style='margin-bottom:30px;'></div>", unsafe_allow_html=True)
         else:
-            st.info("Tournament matches haven't started yet! Head to the Office Suite tab to begin the tour.")
+            st.info("Tournament matches haven't started yet! Head to the Office Suite tab to advance the fixture bracket.")
 
-    # --- TAB 2: DEDICATED ROSTER SQUAD HUB ---
+    # --- TAB 2: DEDICATED SQUAD HUB ---
     with tab_roster:
         st.subheader("👥 Franchise Player Contract Hub")
         human_squads = [t for t in st.session_state.teams if t["is_human"]]
         selected_manager = st.selectbox("Manager Account Selector Profile:", options=[h["team_name"] for h in human_squads])
         t = next(team for team in human_squads if team["team_name"] == selected_manager)
         
-        st.write(f"Current Pitch Modifier: **{st.session_state.current_venue['name']}**")
-        player_map = {p["name"]: p for p in t["squad"]}
+        # Sidelined grid setup mapping rules
+        col_selects, col_preview = st.columns([2, 3])
         
-        current_p11 = [p["name"] for p in t["playing_11"]] if t["playing_11"] else list(player_map.keys())[:11]
-        
-        st.markdown("##### ⚙️ Lock Starters Strategy Layout")
-        new_p11 = st.multiselect("Select Your Starting Playing 11 Starters:", options=list(player_map.keys()), default=current_p11, key=f"hub_p11_{t['team_name']}")
-        remaining_squad = [n for n in player_map.keys() if n not in new_p11]
-        
-        default_sub = t["impact_player"]["name"] if (t["impact_player"] and t["impact_player"]["name"] in remaining_squad) else (remaining_squad[0] if remaining_squad else None)
-        new_sub = st.selectbox("Assign Playing 12 Impact Sub Slot:", options=remaining_squad, index=0 if default_sub is None else remaining_squad.index(default_sub))
-        
-        if st.button("💾 Apply & Update Playing 12 Tactical Matrix", use_container_width=True):
-            if len(new_p11) != 11:
-                st.error("Your starting roster layout must contain exactly 11 players!")
-            else:
-                t["playing_11"] = [player_map[n] for n in new_p11]
-                t["impact_player"] = player_map[new_sub] if new_sub else None
-                st.success("Lineup safely rewritten! Ready for competitive bracket fixtures.")
+        with col_selects:
+            st.markdown("##### ⚙️ Roster Directives")
+            player_map = {p["name"]: p for p in t["squad"]}
+            current_p11 = [p["name"] for p in t["playing_11"]] if t["playing_11"] else list(player_map.keys())[:11]
+            
+            new_p11 = st.multiselect("Select Your Starting Playing 11 Starters:", options=list(player_map.keys()), default=current_p11, key=f"hub_p11_{t['team_name']}")
+            remaining_squad = [n for n in player_map.keys() if n not in new_p11]
+            
+            default_sub = t["impact_player"]["name"] if (t["impact_player"] and t["impact_player"]["name"] in remaining_squad) else (remaining_squad[0] if remaining_squad else None)
+            new_sub = st.selectbox("Assign Playing 12 Impact Sub Slot:", options=remaining_squad, index=0 if default_sub is None else remaining_squad.index(default_sub))
+            
+            if st.button("💾 Apply & Update Playing 12 Tactical Matrix", use_container_width=True):
+                if len(new_p11) != 11:
+                    st.error("Your starting roster layout must contain exactly 11 players!")
+                else:
+                    t["playing_11"] = [player_map[n] for n in new_p11]
+                    t["impact_player"] = player_map[new_sub] if new_sub else None
+                    st.success("Lineup safely rewritten! Ready for competitive bracket fixtures.")
 
-        st.divider()
-        st.markdown("##### 🔍 Complete Scout Contracts Inventory Sheet")
-        for p in t["squad"]:
-            is_starter = "⭐ Starter XI" if p in t["playing_11"] else ("🔄 Impact Sub" if t["impact_player"] and p["name"] == t["impact_player"]["name"] else "📋 Bench Reserve")
-            st.text(f"• {p['name']} (OVR {p['rating']} - {p['role']}) | Trait: {get_player_trait(p)} [{is_starter}]")
+        with col_preview:
+            st.markdown("##### 📋 Complete Squad Roster Sheet & Form Indicators")
+            for p in t["squad"]:
+                is_starter = "⭐ Starter XI" if p in t["playing_11"] else ("🔄 Impact Sub" if t["impact_player"] and p["name"] == t["impact_player"]["name"] else "📋 Bench Reserve")
+                color_tag = "#60A5FA" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#94A3B8")
+                st.markdown(f"""
+                    <div style='padding:10px; border-radius:8px; background-color:#1E293B; margin-bottom:8px; border-left:4px solid {color_tag};'>
+                        <strong>{p['name']}</strong> — OVR {p['rating']} ({p['role']})<br/>
+                        <span style='font-size:12px; color:#CBD5E1;'>Trait: {get_player_trait(p)} | Allocation: {is_starter}</span>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    # --- TAB 3: STANDINGS ---
+    # --- TAB 3: STANDINGS MATRIX ---
     with tab_table:
         st.subheader("League Table Standings Grid")
         table_data = [{"Franchise Team": t["team_name"], "Wins 🟢": t["wins"], "Losses 🔴": t["losses"], "Squad Morale": f"{t['morale']}%", "Points": t["points"]} for t in st.session_state.teams]
         st.table(sorted(table_data, key=lambda x: x["Points"], reverse=True))
 
-    # --- TAB 4: CAPS RACE ---
+    # --- TAB 4: CAPS LEADERBOARDS ---
     with tab_caps:
         col_o, col_p = st.columns(2)
         with col_o:
@@ -579,13 +636,13 @@ elif st.session_state.game_stage == "dashboard":
             sorted_wicks = sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:5]
             for idx, (name, wck) in enumerate(sorted_wicks): st.write(f"**{idx+1}. {name}** — {wck} wickets")
 
-    # --- TAB 5: OFFICE SUITE FIXTURES ---
+    # --- TAB 5: OFFICE TACTICAL CONTROLS ---
     with tab_career:
         user_team = next((t for t in st.session_state.teams if t["is_human"]), None)
         
         if st.session_state.press_conference:
             pc = st.session_state.press_conference
-            st.warning(f"🎤 **PRESS CONFERENCE:** {pc['situation']}")
+            st.warning(f"🎤 **PRESS CONFERENCE INTERCEPT:** {pc['situation']}")
             for opt_key, opt_val in pc["options"].items():
                 if st.button(opt_val["text"], key=f"pc_{opt_key}"):
                     if user_team: user_team["morale"] = min(100, max(20, user_team["morale"] + opt_val["morale_effect"]))
@@ -594,8 +651,16 @@ elif st.session_state.game_stage == "dashboard":
             st.stop()
 
         st.subheader("Simulate Active Fixture Matches")
-        col_sim1, col_sim2 = st.columns(2)
         
+        # Render clean side by side corporate option metrics layout
+        if user_team:
+            col_met1, col_met2, col_met3 = st.columns(3)
+            with col_met1: st.metric("Current Franchise Points", user_team["points"])
+            with col_met2: st.metric("Locker Room Morale", f"{user_team['morale']}%")
+            with col_met3: st.metric("Remaining Transfer Budget", f"₹{user_team['purse']/100:.2f} CR")
+        st.divider()
+
+        col_sim1, col_sim2 = st.columns(2)
         with col_sim1:
             if st.button("🎮 Launch Live Interactive Game Match", type="primary", use_container_width=True):
                 opp_team = next(t for t in st.session_state.teams if t["team_name"] != user_team["team_name"])
