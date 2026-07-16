@@ -408,7 +408,7 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 4
             st.rerun()
 
-      st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
         
         # Fixed: Exactly 8 spaces of indentation to match the parent block
         st.metric(
