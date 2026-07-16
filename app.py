@@ -3,7 +3,7 @@ import random
 import time
 from streamlit_autorefresh import st_autorefresh
 
-# --- PREMIUM DASHBOARD CONFIGURATION ---
+# --- ULTIMATE EXECUTIVE DASHBOARD CONFIGURATION ---
 st.set_page_config(page_title="IPL Pro-Manager Simulation Console", page_icon="🏏", layout="wide")
 
 # --- DATA POOLS ---
@@ -254,65 +254,12 @@ def get_player_trait(player):
     elif player["role"] == "Wicket-Keeper": return "🧤 Fast Stumper"
     return "🏏 Steady Asset"
 
-# --- ASSET INSPECTION PROFILE DIALOG ---
-@st.dialog("🔍 Scout Inspection Profile")
-def inspect_player_dialog(player_obj):
-    st.markdown(f"### {player_obj['name']}")
-    st.markdown(f"**Specialty Role:** {player_obj['role']}")
-    st.markdown(f"**Base Evaluation Skill Rating:** {player_obj['rating']} OVR")
-    st.markdown(f"**Tactical Scout Trait:** `{get_player_trait(player_obj)}`")
-
-# --- LIVE ROSTER VIEW DIALOG POPUP ---
-@st.dialog("📋 Current Roster & Budget Review", width="medium")
-def view_teams_dialog():
-    st.write("Review team spending status and compositional category balance:")
-    for t in st.session_state.teams:
-        batsmen = len([p for p in t["squad"] if p["role"] == "Batsman"])
-        keepers = len([p for p in t["squad"] if p["role"] == "Wicket-Keeper"])
-        all_rounders = len([p for p in t["squad"] if p["role"] == "All-Rounder"])
-        bowlers = len([p for p in t["squad"] if p["role"] == "Bowler"])
-        
-        status_text = "⚠️ SQUAD MISMATCH" if (batsmen < 5 or keepers < 2 or all_rounders < 3 or bowlers < 5) else "✅ VALID"
-        if len(t["squad"]) > 20: status_text = "⚠️ OVER SIGNED"
-            
-        with st.expander(f"{t['team_name']} — Purse: ₹{t['purse']/100:.2f} CR ({status_text})"):
-            st.write(f"**Total Squad Count:** {len(t['squad'])} / 20 Players")
-            st.write(f"🏏 Bat: {batsmen}/5 | 🧤 WK: {keepers}/2 | 🔀 AR: {all_rounders}/3 | 🎯 Bowl: {bowlers}/5")
-
-# --- SESSION INITIALIZATIONS ---
-for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "scouted_count", "scouted_players", "match_history", "career_event", "match_day", "stats_runs", "stats_wickets", "press_conference", "live_match_state"]:
+# --- SESSION STATES ---
+for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "scouted_count", "scouted_players", "match_history", "stats_runs", "stats_wickets", "live_match_state"]:
     if key not in st.session_state: 
-        st.session_state[key] = [] if "history" in key or "teams" in key or "players" in key else ({} if "stats" in key else (None if "bidder" in key or "event" in key or "conference" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 1 if "day" in key else 0)))))
+        st.session_state[key] = [] if "history" in key or "teams" in key or "players" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
+if "match_day" not in st.session_state: st.session_state.match_day = 1
 if "current_venue" not in st.session_state: st.session_state.current_venue = random.choice(VENUES)
-
-# --- STYLING UI MASTER REHAUL RULES ---
-st.markdown("""
-    <style>
-    .stApp { background-color: #030712 !important; }
-    h1, h2, h3, h4, h5, p, label, .stText, [data-testid="stMetricValue"] { color: #FFFFFF !important; font-family: 'Inter', sans-serif !important; }
-    div[data-testid="stMetric"] { background: linear-gradient(135deg, #0F172A, #1E293B) !important; border: 1px solid #10B981 !important; border-radius: 12px !important; padding: 18px !important; }
-    .news-box { padding: 24px; border-radius: 16px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 20px; }
-    .news-title { font-size: 14px !important; font-weight: 700; color: #3B82F6 !important; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
-    .news-headline { font-size: 24px !important; font-weight: 800; color: #FFFFFF !important; line-height: 1.3; }
-    div[data-baseweb="select"] > div { background-color: #0F172A !important; color: white !important; border: 1px solid #334155 !important; border-radius: 8px !important; }
-    .stButton button { background: linear-gradient(135deg, #1E293B, #0F172A) !important; color: #FFFFFF !important; border: 1px solid #334155 !important; border-radius: 8px !important; font-weight: 700 !important; letter-spacing: 0.5px; padding: 12px 28px !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; }
-    .stButton button:hover { background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important; border-color: #60A5FA !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
-    .timer-text { font-size: 22px; font-weight: bold; color: #EF4444 !important; }
-    .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
-    </style>
-""", unsafe_allow_html=True)
-
-# --- FLOATING CORNER PURSE OVERLAY CSS ---
-active_humans = [t for t in st.session_state.teams if t["is_human"]]
-if active_humans:
-    purse_texts = "<br/>".join([f"{h['team_name'].split('\'s ')[0]}: ₹{h['purse']/100:.2f}CR" for h in active_humans])
-    st.markdown(f"""
-        <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E1B4B, #312E81); 
-                    color: white; padding: 14px 22px; border-radius: 12px; font-weight: 800; 
-                    box-shadow: 0px 8px 25px rgba(49, 46, 129, 0.6); z-index: 9999; border: 1px solid #4338CA; font-size:12px; letter-spacing:0.5px;'>
-            💼 LIQUIDITY POOL:<br/>{purse_texts}
-        </div>
-    """, unsafe_allow_html=True)
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -333,12 +280,12 @@ if st.session_state.game_stage == "setup":
         for hc in human_configs:
             teams.append({
                 "team_name": f"{hc['manager']}'s {hc['team']}", "is_human": True, "purse": 15000, "squad": [], 
-                "points": 0, "wins": 0, "losses": 0, "disqualified": False, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 80
+                "points": 0, "wins": 0, "losses": 0, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 80
             })
         for bot_team in [t for t in TEAM_NAMES_POOL if t not in used_teams]:
             teams.append({
                 "team_name": f"{bot_team} (Bot)", "is_human": False, "purse": 15000, "squad": [], 
-                "personality": random.choice(BOT_PERSONALITIES), "points": 0, "wins": 0, "losses": 0, "disqualified": False, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 75
+                "personality": random.choice(BOT_PERSONALITIES), "points": 0, "wins": 0, "losses": 0, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 75
             })
         st.session_state.teams = teams
         st.session_state.game_stage = "auction"
@@ -426,57 +373,8 @@ elif st.session_state.game_stage == "auction":
                 st.session_state.highest_bidder = human_teams_bidding[0]
                 st.session_state.timer_seconds = 4  
                 st.rerun()
-        if st.session_state.timer_seconds > 0:
-            st.session_state.timer_seconds -= 1
-            bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
-            if bots and random.random() < 0.45: 
-                valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
-                if valid_bots:
-                    counter_bot = random.choice(valid_bots)
-                    st.session_state.current_bid += 50
-                    st.session_state.highest_bidder = counter_bot
-                    st.session_state.timer_seconds = 4  
-                    st.rerun()
-        else:
-            if st.session_state.highest_bidder:
-                st.session_state.highest_bidder["purse"] -= st.session_state.current_bid
-                st.session_state.highest_bidder["squad"].append(player)
-            else:
-                cb = [t for t in st.session_state.teams if len(t["squad"]) < 20 and t["purse"] >= player["base_price"]]
-                if cb:
-                    assigned = random.choice(cb)
-                    assigned["purse"] -= player["base_price"]
-                    assigned["squad"].append(player)
-            st.session_state.auction_index += 1
-            st.session_state.current_bid = 0
-            st.session_state.highest_bidder = None
-            st.session_state.timer_seconds = 4
-            st.rerun()
 
-    st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
-        
-        # Fixed: Exactly 8 spaces of indentation to match the parent block
-        st.metric(
-            label="Current High Bid Status", 
-            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
-            delta=f"Current Leader: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'}"
-        )
-
-        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-        st.metric(
-            label="Current High Bid Status", 
-            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
-            delta=f"Current Leader: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'}"
-        )
-
-        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]:
-            if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
-                st.session_state.current_bid += 50
-                st.session_state.highest_bidder = human_teams_bidding[0]
-                st.session_state.timer_seconds = 4  
-                st.rerun()
-
-# --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
+# --- STAGE 3: MAIN CORE CONSOLE TAB VIEW HUB ---
 elif st.session_state.game_stage == "dashboard":
     
     # === FULL 20-OVER REAL CORE BALL-BY-BALL ARENA INTERCEPT ===
@@ -632,7 +530,6 @@ elif st.session_state.game_stage == "dashboard":
                 st.rerun()
         with col_sim2:
             if st.button("⚡ Fast Skip Match via Auto Simulation Loops", use_container_width=True):
-                # Core computation trigger checks venue multipliers
                 boost_role = st.session_state.current_venue["boost_role"]
                 boost_amt = st.session_state.current_venue["boost_amount"]
                 
