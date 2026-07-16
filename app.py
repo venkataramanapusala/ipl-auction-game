@@ -408,6 +408,51 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds = 4
             st.rerun()
 
+        st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
+        st.progress(st.session_state.timer_seconds / 4)
+
+        st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
+        
+        st.metric(
+            label="Current High Bid Status", 
+            value=f"₹{st.session_state.current_bid/100:.2f} CR", 
+            delta=f"Current Leader: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids Yet'}"
+        )
+
+        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
+        if human_teams_bidding:
+            if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
+                st.session_state.current_bid += 50
+                st.session_state.highest_bidder = human_teams_bidding[0]
+                st.session_state.timer_seconds = 4  
+                st.rerun()
+        if st.session_state.timer_seconds > 0:
+            st.session_state.timer_seconds -= 1
+            bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
+            if bots and random.random() < 0.45: 
+                valid_bots = [b for b in bots if st.session_state.highest_bidder is None or b["team_name"] != st.session_state.highest_bidder["team_name"]]
+                if valid_bots:
+                    counter_bot = random.choice(valid_bots)
+                    st.session_state.current_bid += 50
+                    st.session_state.highest_bidder = counter_bot
+                    st.session_state.timer_seconds = 4  
+                    st.rerun()
+        else:
+            if st.session_state.highest_bidder:
+                st.session_state.highest_bidder["purse"] -= st.session_state.current_bid
+                st.session_state.highest_bidder["squad"].append(player)
+            else:
+                cb = [t for t in st.session_state.teams if len(t["squad"]) < 20 and t["purse"] >= player["base_price"]]
+                if cb:
+                    assigned = random.choice(cb)
+                    assigned["purse"] -= player["base_price"]
+                    assigned["squad"].append(player)
+            st.session_state.auction_index += 1
+            st.session_state.current_bid = 0
+            st.session_state.highest_bidder = None
+            st.session_state.timer_seconds = 4
+            st.rerun()
+
     st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}<br/><em>Trait: {get_player_trait(player)}</em></div>", unsafe_allow_html=True)
         
         # Fixed: Exactly 8 spaces of indentation to match the parent block
