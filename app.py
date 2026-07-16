@@ -261,6 +261,35 @@ for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidd
 if "match_day" not in st.session_state: st.session_state.match_day = 1
 if "current_venue" not in st.session_state: st.session_state.current_venue = random.choice(VENUES)
 
+# --- GLOBAL STYLING ARCHITECTURE ---
+st.markdown("""
+    <style>
+    .stApp { background-color: #030712 !important; }
+    h1, h2, h3, h4, h5, p, label, .stText, [data-testid="stMetricValue"] { color: #FFFFFF !important; font-family: 'Inter', sans-serif !important; }
+    div[data-testid="stMetric"] { background: linear-gradient(135deg, #0F172A, #1E293B) !important; border: 1px solid #10B981 !important; border-radius: 12px !important; padding: 18px !important; }
+    .news-box { padding: 24px; border-radius: 16px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 20px; }
+    .news-title { font-size: 14px !important; font-weight: 700; color: #3B82F6 !important; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .news-headline { font-size: 24px !important; font-weight: 800; color: #FFFFFF !important; line-height: 1.3; }
+    div[data-baseweb="select"] > div { background-color: #0F172A !important; color: white !important; border: 1px solid #334155 !important; border-radius: 8px !important; }
+    .stButton button { background: linear-gradient(135deg, #1E293B, #0F172A) !important; color: #FFFFFF !important; border: 1px solid #334155 !important; border-radius: 8px !important; font-weight: 700 !important; letter-spacing: 0.5px; padding: 12px 28px !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; }
+    .stButton button:hover { background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important; border-color: #60A5FA !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
+    .timer-text { font-size: 22px; font-weight: bold; color: #EF4444 !important; }
+    .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- FLOATING CORNER PURSE OVERLAY CSS ---
+active_humans = [t for t in st.session_state.teams if t["is_human"]]
+if active_humans:
+    purse_texts = "<br/>".join([f"{h['team_name'].split('\'s ')[0]}: ₹{h['purse']/100:.2f}CR" for h in active_humans])
+    st.markdown(f"""
+        <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E1B4B, #312E81); 
+                    color: white; padding: 14px 22px; border-radius: 12px; font-weight: 800; 
+                    box-shadow: 0px 8px 25px rgba(49, 46, 129, 0.6); z-index: 9999; border: 1px solid #4338CA; font-size:12px; letter-spacing:0.5px;'>
+            💼 LIQUIDITY POOL:<br/>{purse_texts}
+        </div>
+    """, unsafe_allow_html=True)
+
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
     st.header("🎮 IPL Premium Draft Room Manager")
@@ -374,7 +403,7 @@ elif st.session_state.game_stage == "auction":
                 st.session_state.timer_seconds = 4  
                 st.rerun()
 
-# --- STAGE 3: MAIN CORE CONSOLE TAB VIEW HUB ---
+# --- STAGE 3: MAIN CORE CONSOLE HUB ---
 elif st.session_state.game_stage == "dashboard":
     
     # === FULL 20-OVER REAL CORE BALL-BY-BALL ARENA INTERCEPT ===
@@ -414,14 +443,21 @@ elif st.session_state.game_stage == "dashboard":
                         "detailed": True, "team1_score": f"{ms['target']-1 if user_won and ms['user_team'] == ms['bowl_team'] else ms['score']}/{ms['wickets']}",
                         "team2_score": f"{ms['score']}/{ms['wickets']}", "bat_card": ms['bat_card'], "bowl_card": ms['bowl_card']
                     })
+                    
+                    # Update global stats for Orange/Purple Caps manually
+                    for name, runs in ms['bat_card'].items():
+                        st.session_state.stats_runs[name] = st.session_state.stats_runs.get(name, 0) + runs
+                    for name, wck in ms['bowl_card'].items():
+                        st.session_state.stats_wickets[name] = st.session_state.stats_wickets.get(name, 0) + wck
+                        
                     st.session_state.live_match_state = None; st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
                 st.stop()
 
         curr_batsman_idx = min(ms['wickets'], 10)
         curr_bowler_idx = (ms['balls'] // 6) % 5
         
-        bat_player_name = ms['bat_roster'][curr_batsman_idx]["name"]
-        bowl_player_name = ms['bowl_roster'][curr_bowler_idx]["name"]
+        bat_player_name = ms['bat_roster'][curr_batsman_idx]["name"] if curr_batsman_idx < len(ms['bat_roster']) else "Tailender"
+        bowl_player_name = ms['bowl_roster'][curr_bowler_idx]["name"] if curr_bowler_idx < len(ms['bowl_roster']) else "Part-Timer"
 
         st.write(f"🏃 **On-Strike Batsman:** {bat_player_name} | 🎯 **Active Bowler:** {bowl_player_name}")
         
@@ -454,7 +490,7 @@ elif st.session_state.game_stage == "dashboard":
         </div>
     """, unsafe_allow_html=True)
 
-    tab_news, tab_roster, tab_table, tab_caps = st.tabs(["📰 Media Newsroom", "👥 Roster Player Hub", "📊 League Standings", "👑 Cap Races"])
+    tab_news, tab_roster, tab_table, tab_caps, tab_career = st.tabs(["📰 Media Newsroom", "👥 Roster Player Hub", "📊 League Standings", "👑 Cap Races", "👔 Office Suite"])
 
     # --- TAB 1: NEWS & SCORECARDS ---
     with tab_news:
@@ -473,7 +509,7 @@ elif st.session_state.game_stage == "dashboard":
                         if "bowl_card" in match and match["bowl_card"]:
                             for name, wck in match["bowl_card"].items(): st.text(f"🔸 {name}: {wck} wickets")
                         else: st.text("Jasprit Bumrah: 3 wickets\nRashid Khan: 2 wickets\nTrent Boult: 1 wicket")
-        else: st.caption("Advance match setups inside the Cap Races tab controller window.")
+        else: st.caption("Advance match setups inside the Office Suite control loop.")
 
     # --- TAB 2: ROSTER HUD ---
     with tab_roster:
@@ -507,8 +543,20 @@ elif st.session_state.game_stage == "dashboard":
     with tab_table:
         st.table(sorted([{"Franchise Team": t["team_name"], "Wins": t["wins"], "Losses": t["losses"], "Points": t["points"]} for t in st.session_state.teams], key=lambda x: x["Points"], reverse=True))
 
-    # --- TAB 4: CAREER OFFICE & CONTROLS ---
+    # --- TAB 4: CAPS LEADERBOARDS ---
     with tab_caps:
+        col_o, col_p = st.columns(2)
+        with col_o:
+            st.markdown("### 🟠 Orange Cap Leaderboard")
+            sorted_runs = sorted(st.session_state.stats_runs.items(), key=lambda x: x[1], reverse=True)[:5]
+            for idx, (name, runs) in enumerate(sorted_runs): st.write(f"**{idx+1}. {name}** — {runs} runs")
+        with col_p:
+            st.markdown("### 🟣 Purple Cap Leaderboard")
+            sorted_wicks = sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:5]
+            for idx, (name, wck) in enumerate(sorted_wicks): st.write(f"**{idx+1}. {name}** — {wck} wickets")
+
+    # --- TAB 5: CAREER OFFICE & CONTROLS ---
+    with tab_career:
         user_team = next(t for t in st.session_state.teams if t["is_human"])
         opp_team = next(t for t in st.session_state.teams if not t["is_human"])
         
@@ -541,18 +589,41 @@ elif st.session_state.game_stage == "dashboard":
                     
                     p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
                     
+                    all_batsmen = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Batsman", "Wicket-Keeper", "All-Rounder"]]
+                    all_bowlers = [p for p in t1["playing_11"] + t2["playing_11"] if p["role"] in ["Bowler", "All-Rounder"]]
+                    
+                    # Generate realistic simulated scorecards
+                    t1_bat_card, t2_bat_card = {}, {}
+                    t1_bowl_card, t2_bowl_card = {}, {}
+                    
+                    t1_runs = random.randint(140, 220)
+                    t2_runs = random.randint(130, 210)
+                    t1_wickets = random.randint(3, 10)
+                    t2_wickets = random.randint(3, 10)
+                    
                     if p1 > p2:
-                        t1["points"] += 2; t1["wins"] += 1
-                        t2["losses"] += 1
-                        headline = f"{t1['team_name']} won structural match simulation."
+                        t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
+                        headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
                     else:
-                        t2["points"] += 2; t2["wins"] += 1
-                        t1["losses"] += 1
-                        headline = f"{t2['team_name']} won structural match simulation."
+                        t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
+                        headline = f"{t2['team_name']} won by {10 - t2_wickets} wickets!"
+                        
+                    # Allocate stats
+                    if all_batsmen:
+                        top_bat = random.choice(all_batsmen)["name"]
+                        r_rolled = random.randint(45, 95)
+                        st.session_state.stats_runs[top_bat] = st.session_state.stats_runs.get(top_bat, 0) + r_rolled
+                        t1_bat_card[top_bat] = r_rolled
+                    
+                    if all_bowlers:
+                        top_bowl = random.choice(all_bowlers)["name"]
+                        w_rolled = random.randint(2, 5)
+                        st.session_state.stats_wickets[top_bowl] = st.session_state.stats_wickets.get(top_bowl, 0) + w_rolled
+                        t1_bowl_card[top_bowl] = w_rolled
                         
                     st.session_state.match_history.append({
                         "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline,
-                        "detailed": False, "bat_card": {}, "bowl_card": {}
+                        "detailed": True, "bat_card": t1_bat_card, "bowl_card": t1_bowl_card
                     })
                     
                 st.session_state.match_day += 1
