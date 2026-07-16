@@ -420,6 +420,9 @@ elif st.session_state.game_stage == "dashboard":
                 st.info("🔄 First Innings Completed! Swapping field strategies for Run Chase.")
                 ms['target'] = ms['score'] + 1; ms['innings'] = 2; ms['score'] = 0; ms['wickets'] = 0; ms['balls'] = 0
                 ms['bat_team'], ms['bowl_team'] = ms['opp_team'], ms['user_team']
+                
+                # Flip dynamic tracking maps
+                ms['bat_roster_current'], ms['bowl_roster_current'] = ms['bowl_roster'], ms['bat_roster']
                 st.rerun()
             else:
                 user_won = (ms['user_team'] == ms['bat_team'] and ms['score'] >= ms['target']) or (ms['user_team'] == ms['bowl_team'] and ms['score'] < ms['target'])
@@ -436,13 +439,27 @@ elif st.session_state.game_stage == "dashboard":
                     st.error("🔴 MATCHDAY DEFEAT!"); o_t["points"] += 2; o_t["wins"] += 1; u_t["losses"] += 1; u_t["morale"] = max(20, u_t["morale"] - 10)
                 
                 if st.button("Finalize and Save Scorecard Matrix"):
+                    # Fill DNB slots for un-batted players to complete the full scorecard layout
+                    final_bat_list = []
+                    for p in ms['bat_roster_current']:
+                        if p["name"] in ms['bat_card_raw']:
+                            final_bat_list.append({"Player": p["name"], **ms['bat_card_raw'][p["name"]]})
+                        else:
+                            final_bat_list.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
+                            
+                    final_bowl_list = []
+                    for p in ms['bowl_roster_current']:
+                        if p["name"] in ms['bowl_card_raw']:
+                            final_bowl_list.append({"Player": p["name"], **ms['bowl_card_raw'][p["name"]]})
+                        else:
+                            final_bowl_list.append({"Player": p["name"], "Overs": 0.0, "Runs Conceded": 0, "W": 0})
+
                     st.session_state.match_history.append({
                         "fixture": f"{ms['user_team']} vs {ms['opp_team']}", "result": result_headline,
-                        "detailed": True, "team1_score": f"{ms['target']-1 if user_won and ms['user_team'] == ms['bowl_team'] else ms['score']}/{ms['wickets']}",
-                        "team2_score": f"{ms['score']}/{ms['wickets']}", "bat_card": ms['bat_card_raw'], "bowl_card": ms['bowl_card_raw']
+                        "detailed": True, "bat_card": final_bat_list, "bowl_card": final_bowl_list
                     })
                     
-                    # Update global stats for Orange/Purple Caps manually
+                    # Update cap statistics
                     for name, block in ms['bat_card_raw'].items():
                         st.session_state.stats_runs[name] = st.session_state.stats_runs.get(name, 0) + block["R"]
                     for name, block in ms['bowl_card_raw'].items():
@@ -454,8 +471,8 @@ elif st.session_state.game_stage == "dashboard":
         curr_batsman_idx = min(ms['wickets'], 10)
         curr_bowler_idx = (ms['balls'] // 6) % 5
         
-        bat_player_name = ms['bat_roster'][curr_batsman_idx]["name"] if curr_batsman_idx < len(ms['bat_roster']) else "Tailender"
-        bowl_player_name = ms['bowl_roster'][curr_bowler_idx]["name"] if curr_bowler_idx < len(ms['bowl_roster']) else "Part-Timer"
+        bat_player_name = ms['bat_roster_current'][curr_batsman_idx]["name"] if curr_batsman_idx < len(ms['bat_roster_current']) else "Tailender"
+        bowl_player_name = ms['bowl_roster_current'][curr_bowler_idx]["name"] if curr_bowler_idx < len(ms['bowl_roster_current']) else "Part-Timer"
 
         st.write(f"🏃 **On-Strike Batsman:** {bat_player_name} | 🎯 **Active Bowler:** {bowl_player_name}")
         
@@ -477,7 +494,6 @@ elif st.session_state.game_stage == "dashboard":
             
             ms['score'] += runs; ms['balls'] += 1
             
-            # Update detailed running batsman structural dict
             if bat_player_name not in ms['bat_card_raw']:
                 ms['bat_card_raw'][bat_player_name] = {"R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": 0.0}
             ms['bat_card_raw'][bat_player_name]["R"] += runs
@@ -486,11 +502,14 @@ elif st.session_state.game_stage == "dashboard":
             ms['bat_card_raw'][bat_player_name]["6s"] += sixes
             ms['bat_card_raw'][bat_player_name]["S/R"] = round((ms['bat_card_raw'][bat_player_name]["R"] / ms['bat_card_raw'][bat_player_name]["B"]) * 100, 2)
             
-            # Update detailed running bowler structural dict
             if bowl_player_name not in ms['bowl_card_raw']:
                 ms['bowl_card_raw'][bowl_player_name] = {"Overs": 0.0, "Runs Conceded": 0, "W": 0}
             ms['bowl_card_raw'][bowl_player_name]["Runs Conceded"] += runs
-            if runs == 0 and "OUT" in comment and "Run Chase" not in comment:
+            ms['bowl_card_raw'][bowl_player_name]["Overs"] = round((ms['bowl_card_raw'][bowl_player_name]["Overs"] + 0.1), 1)
+            if ms['bowl_card_raw'][bowl_player_name]["Overs"] % 1 >= 0.6:
+                ms['bowl_card_raw'][bowl_player_name]["Overs"] = round(float(int(ms['bowl_card_raw'][bowl_player_name]["Overs"]) + 1), 1)
+                
+            if runs == 0 and "OUT" in comment:
                 ms['bowl_card_raw'][bowl_player_name]["W"] += 1
             st.rerun()
         st.stop()
@@ -506,24 +525,10 @@ elif st.session_state.game_stage == "dashboard":
                     col_b, col_w = st.columns(2)
                     with col_b:
                         st.markdown("<h4 style='color:#38BDF8;'>🏏 Batting Scorecard</h4>", unsafe_allow_html=True)
-                        if "bat_card" in match and match["bat_card"]:
-                            st.table(match["bat_card"])
-                        else:
-                            st.table([
-                                {"Player": "Virat Kohli", "R": 74, "B": 42, "4s": 6, "6s": 3, "S/R": 176.19},
-                                {"Player": "Suryakumar Yadav", "R": 42, "B": 21, "4s": 4, "6s": 2, "S/R": 200.00},
-                                {"Player": "Rohit Sharma", "R": 18, "B": 12, "4s": 2, "6s": 1, "S/R": 150.00}
-                            ])
+                        st.table(match["bat_card"])
                     with col_w:
                         st.markdown("<h4 style='color:#34D399;'>🎯 Bowling Scorecard</h4>", unsafe_allow_html=True)
-                        if "bowl_card" in match and match["bowl_card"]:
-                            st.table(match["bowl_card"])
-                        else:
-                            st.table([
-                                {"Player": "Jasprit Bumrah", "Overs": 4.0, "Runs Conceded": 24, "W": 3},
-                                {"Player": "Rashid Khan", "Overs": 4.0, "Runs Conceded": 28, "W": 2},
-                                {"Player": "Trent Boult", "Overs": 4.0, "Runs Conceded": 32, "W": 1}
-                            ])
+                        st.table(match["bowl_card"])
         else: st.caption("Advance match setups inside the Office Suite control loop.")
 
     # --- TAB 2: ROSTER HUD ---
@@ -563,11 +568,11 @@ elif st.session_state.game_stage == "dashboard":
         col_o, col_p = st.columns(2)
         with col_o:
             st.markdown("### 🟠 Orange Cap Leaderboard")
-            sorted_runs = sorted(st.session_state.stats_runs.items(), key=lambda x: x[1], reverse=True)[:5]
+            sorted_runs = sorted(st.session_state.stats_runs.items(), key=lambda x: x[1], reverse=True)[:10]
             for idx, (name, runs) in enumerate(sorted_runs): st.write(f"**{idx+1}. {name}** — {runs} runs")
         with col_p:
             st.markdown("### 🟣 Purple Cap Leaderboard")
-            sorted_wicks = sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:5]
+            sorted_wicks = sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]
             for idx, (name, wck) in enumerate(sorted_wicks): st.write(f"**{idx+1}. {name}** — {wck} wickets")
 
     # --- TAB 5: CAREER OFFICE & CONTROLS ---
@@ -587,7 +592,9 @@ elif st.session_state.game_stage == "dashboard":
             if st.button("🎮 Enter Live Ball-by-Ball Match Arena (Full 20 Overs)", type="primary", use_container_width=True):
                 st.session_state.live_match_state = {
                     "user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "bat_team": user_team["team_name"], "bowl_team": opp_team["team_name"],
-                    "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0,
+                    "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], 
+                    "bat_roster_current": user_team["playing_11"], "bowl_roster_current": opp_team["playing_11"],
+                    "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0,
                     "bat_card_raw": {}, "bowl_card_raw": {}, "log": "Match Day Initialized. Pitch limits configured."
                 }
                 st.rerun()
@@ -604,37 +611,36 @@ elif st.session_state.game_stage == "dashboard":
                     
                     p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
                     
-                    all_batsmen_1 = [p for p in t1["playing_11"] if p["role"] in ["Batsman", "Wicket-Keeper", "All-Rounder"]]
-                    all_bowlers_2 = [p for p in t2["playing_11"] if p["role"] in ["Bowler", "All-Rounder"]]
-                    
                     t1_runs = random.randint(140, 220)
                     t2_runs = random.randint(130, 210)
-                    t2_wickets = random.randint(3, 10)
                     
                     if p1 > p2:
                         t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
                         headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
                     else:
                         t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
-                        headline = f"{t2['team_name']} won by {10 - t2_wickets} wickets!"
+                        headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
                         
-                    # Build structured tabular DataFrame data lists for simulated engine frames
+                    # Generate full scorecards for all 11 players in auto-simulation
                     simulated_bat_card = []
-                    simulated_bowl_card = []
-                    
-                    for p in all_batsmen_1[:5]:
-                        r_score = random.randint(15, 65)
-                        b_faced = random.randint(10, 40)
-                        f_count = random.randint(1, 5)
-                        s_count = random.randint(0, 3)
-                        simulated_bat_card.append({"Player": p["name"], "R": r_score, "B": b_faced, "4s": f_count, "6s": s_count, "S/R": round((r_score/b_faced)*100, 2)})
+                    for idx, p in enumerate(t1["playing_11"]):
+                        r_score = random.randint(35, 85) if idx < 3 else (random.randint(10, 35) if idx < 7 else random.randint(0, 10))
+                        b_faced = int(r_score / random.uniform(1.1, 1.8)) + 1
+                        f_count = max(0, int(r_score * 0.08))
+                        s_count = max(0, int(r_score * 0.04))
+                        sr = round((r_score/b_faced)*100, 2)
+                        simulated_bat_card.append({"Player": p["name"], "R": r_score, "B": b_faced, "4s": f_count, "6s": s_count, "S/R": sr})
                         st.session_state.stats_runs[p["name"]] = st.session_state.stats_runs.get(p["name"], 0) + r_score
                         
-                    for p in all_bowlers_2[:3]:
-                        w_count = random.randint(1, 3)
-                        r_conceded = random.randint(18, 42)
-                        simulated_bowl_card.append({"Player": p["name"], "Overs": 4.0, "Runs Conceded": r_conceded, "W": w_count})
-                        st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w_count
+                    simulated_bowl_card = []
+                    for idx, p in enumerate(t2["playing_11"]):
+                        is_bowler = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
+                        w_count = random.randint(1, 3) if is_bowler and random.random() < 0.6 else 0
+                        r_conceded = random.randint(22, 45) if is_bowler else 0
+                        ovr = 4.0 if is_bowler else 0.0
+                        simulated_bowl_card.append({"Player": p["name"], "Overs": ovr, "Runs Conceded": r_conceded, "W": w_count})
+                        if w_count > 0:
+                            st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w_count
                         
                     st.session_state.match_history.append({
                         "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline,
