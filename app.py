@@ -556,7 +556,7 @@ elif st.session_state.game_stage == "dashboard":
                         st.table(match["inn2_bowl"])
         else: st.caption("Advance fixtures via the Office Suite tab.")
 
-    # --- TAB 2: ROSTER HUD & DEVELOPMENT PIPELINES ---
+   # --- TAB 2: ROSTER HUD & DEVELOPMENT PIPELINES ---
     with tab_roster:
         if user_team:
             st.subheader(f"👥 Squad Hub & Academy Trait Allocator: {user_team['team_name']}")
@@ -571,17 +571,30 @@ elif st.session_state.game_stage == "dashboard":
                     user_team["playing_11"] = [player_map[n] for n in new_p11]
                     user_team["impact_player"] = player_map[new_sub] if new_sub != "None" else None
                     st.success("Roster configurations stored!")
+            
+            # >>> REPLACE ONLY THIS UNDERNEATH <<<
             with col_preview:
                 st.markdown("#### 🏋️ Active Squad Matrix & Development Assignment")
                 for p in user_team["squad"]:
                     is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
                     color_tag = "#38BDF8" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#475569")
                     
-                    with st.expander(f"{p['name']} (OVR {p['rating']} | Age {p['age']}) — {is_starter}"):
-                        p["plan"] = st.selectbox("Strategic Target Development Plan:", ["Balanced Alignment", "Focused Skill Burst", "Tactical IQ Training"], key=f"plan_sel_{p['name']}", index=0 if p["plan"] == "Balanced Alignment" else (1 if p["plan"] == "Focused Skill Burst" else 2))
-                        st.progress(p["xp"] / 100)
-                        st.caption(f"XP Status: {p['xp']}/100 | Hidden Potential Ceiling: {p['dyn_pot']}")
+                    # Safe extraction parameters
+                    p_age = p.get("age", 25)
+                    p_rating = p.get("rating", p.get("OVR", 80))
+                    p_dyn_pot = p.get("dyn_pot", p_rating)
+                    p_xp = p.get("xp", 0)
+                    p_plan = p.get("plan", "Balanced Alignment")
 
+                    with st.expander(f"{p['name']} (OVR {p_rating} | Age {p_age}) — {is_starter}"):
+                        p["plan"] = st.selectbox(
+                            "Strategic Target Development Plan:", 
+                            ["Balanced Alignment", "Focused Skill Burst", "Tactical IQ Training"], 
+                            key=f"plan_sel_{p['name']}", 
+                            index=0 if p_plan == "Balanced Alignment" else (1 if p_plan == "Focused Skill Burst" else 2)
+                        )
+                        st.progress(p_xp / 100)
+                        st.caption(f"XP Status: {p_xp}/100 | Hidden Potential Ceiling: {p_dyn_pot}")
     # --- TAB 3: STANDINGS ---
     with tab_table:
         st.table(sorted([{"Franchise Team": t["team_name"], "Wins": t["wins"], "Losses": t["losses"], "Points": t["points"]} for t in st.session_state.teams], key=lambda x: x["Points"], reverse=True))
