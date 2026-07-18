@@ -235,6 +235,32 @@ if "player_pool" not in st.session_state:
     ]
     random.shuffle(st.session_state.player_pool)
 
+# --- VALUE LOGIC CORES ---
+def get_reasonable_val(player, current_index):
+    random.seed(current_index + 1000)
+    if player["rating"] >= 93: val = random.randint(1350, 1650)
+    elif player["rating"] >= 90: val = random.randint(950, 1300)
+    elif player["rating"] >= 86: val = random.randint(450, 950)
+    else: val = random.randint(80, 400)
+    random.seed() 
+    return val
+
+def get_player_trait(player):
+    if player["rating"] >= 93: return "👑 Legendary Icon Master"
+    if player["rating"] <= 80: return "🌱 Debutant Prospect"
+    if player["role"] == "Batsman": return "💥 Aggressive Finisher" if player["rating"] >= 88 else "🏏 Technical Batter"
+    elif player["role"] == "Bowler": return "🔥 Express Speed Bowler" if player["rating"] >= 88 else "🎯 Line Bowler"
+    elif player["role"] == "All-Rounder": return "🔀 Clutch All-Rounder"
+    elif player["role"] == "Wicket-Keeper": return "🧤 Fast Stumper"
+    return "🏏 Steady Asset"
+
+# --- PERSISTENT SEED ENGINE REGISTRATION ---
+for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "scouted_count", "scouted_players", "match_history", "stats_runs", "stats_wickets", "live_match_state"]:
+    if key not in st.session_state: 
+        st.session_state[key] = [] if "history" in key or "teams" in key or "players" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
+if "match_day" not in st.session_state: st.session_state.match_day = 1
+if "current_venue" not in st.session_state: st.session_state.current_venue = random.choice(VENUES)
+
 # --- GLOBAL STYLING ARCHITECTURE ---
 st.markdown("""
     <style>
@@ -250,27 +276,6 @@ st.markdown("""
     .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
     </style>
 """, unsafe_allow_html=True)
-
-# --- CORNER CONTROL PANELS ---
-human_squads = [t for t in st.session_state.teams if t["is_human"]]
-
-# GLOBAL PROFILE SWITCHER ROW (Triggered dynamically if more than 1 human manager is present)
-if len(human_squads) > 1:
-    col_main_h, col_switch_h = st.columns([4, 1])
-    with col_switch_h:
-        selected_global_name = st.selectbox("👤 Active Profile Console:", options=[h["team_name"] for h in human_squads], key="global_profile_switcher")
-        user_team = next(team for team in human_squads if team["team_name"] == selected_global_name)
-else:
-    user_team = human_squads[0] if human_squads else None
-
-if user_team:
-    st.markdown(f"""
-        <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E1B4B, #312E81); 
-                    color: white; padding: 14px 22px; border-radius: 12px; font-weight: 800; 
-                    box-shadow: 0px 8px 25px rgba(49, 46, 129, 0.6); z-index: 9999; border: 1px solid #4338CA; font-size:12px; letter-spacing:0.5px;'>
-            💼 ACTIVE LIQUIDITY POOL:<br/>{user_team['team_name'].split("'s")[0]}: ₹{user_team['purse']/100:.2f}CR
-        </div>
-    """, unsafe_allow_html=True)
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -342,7 +347,7 @@ elif st.session_state.game_stage == "auction":
             st.session_state.timer_seconds -= 1
             bots = [t for t in st.session_state.teams if not t["is_human"] and len(t["squad"]) < 20 and t["purse"] >= (st.session_state.current_bid + 50)]
             if bots and random.random() < 0.45: 
-                valid_bots = [b for b in bots if st.session_state.highest_bidder if b["team_name"] != st.session_state.highest_bidder["team_name"]]
+                valid_bots = [b for b in bots if not st.session_state.highest_bidder or b["team_name"] != st.session_state.highest_bidder["team_name"]]
                 if valid_bots:
                     counter_bot = random.choice(valid_bots)
                     st.session_state.current_bid += 50
@@ -387,6 +392,27 @@ elif st.session_state.game_stage == "auction":
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
     
+    # Extract human manager options safely inside dashboard phase
+    human_squads = [t for t in st.session_state.teams if t["is_human"]]
+    
+    # RENDER GLOBAL CONSOLE SWITCHER IN CORNER
+    if len(human_squads) > 1:
+        col_main_h, col_switch_h = st.columns([4, 1])
+        with col_switch_h:
+            selected_global_name = st.selectbox("👤 Active Profile Console:", options=[h["team_name"] for h in human_squads], key="global_profile_switcher")
+            user_team = next(team for team in human_squads if team["team_name"] == selected_global_name)
+    else:
+        user_team = human_squads[0] if human_squads else None
+
+    if user_team:
+        st.markdown(f"""
+            <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E1B4B, #312E81); 
+                        color: white; padding: 14px 22px; border-radius: 12px; font-weight: 800; 
+                        box-shadow: 0px 8px 25px rgba(49, 46, 129, 0.6); z-index: 9999; border: 1px solid #4338CA; font-size:12px; letter-spacing:0.5px;'>
+                💼 ACTIVE LIQUIDITY POOL:<br/>{user_team['team_name'].split("'s")[0]}: ₹{user_team['purse']/100:.2f}CR
+            </div>
+        """, unsafe_allow_html=True)
+
     if st.session_state.live_match_state:
         ms = st.session_state.live_match_state
         st.header(f"🏏 T20 EXPERT COMMAND: Innings {ms['innings']} ({ms['bat_team']})")
@@ -487,6 +513,15 @@ elif st.session_state.game_stage == "dashboard":
         st.stop()
 
     st.header(f"🏆 IPL Franchise Operations Hub — Day {st.session_state.match_day}/14")
+    
+    # MATCHDAY ENVIRONMENT CARD
+    st.markdown(f"""
+        <div style='padding: 20px; border-radius: 14px; background: linear-gradient(135deg, #1E1B4B, #0F172A); border: 1px solid #3B82F6; margin-bottom: 24px;'>
+            <h4 style='margin:0; color:#38BDF8; font-weight:800;'>🏟️ CURRENT MATCHDAY ENVIRONMENT: {st.session_state.current_venue['name']}</h4>
+            <p style='margin:6px 0 0 0; font-size:15px; color:#94A3B8;'>{st.session_state.current_venue['desc']}</p>
+        </div>
+    """, unsafe_allow_html=True)
+
     tab_news, tab_roster, tab_table, tab_caps, tab_career = st.tabs(["📰 Media Newsroom", "👥 Roster Player Hub", "📊 League Standings", "👑 Cap Races", "👔 Office Suite"])
 
     # --- TAB 1: NEWSROOM ---
@@ -507,25 +542,26 @@ elif st.session_state.game_stage == "dashboard":
                         st.table(match["inn2_bowl"])
         else: st.caption("Advance fixtures via the Office Suite tab.")
 
-    # --- TAB 2: ROSTER HUD (Tied to switcher context) ---
+    # --- TAB 2: ROSTER HUD ---
     with tab_roster:
-        st.subheader(f"👥 Roster: {user_team['team_name']}")
-        col_selects, col_preview = st.columns([2, 3])
-        with col_selects:
-            player_map = {p["name"]: p for p in user_team["squad"]}
-            current_p11 = [p["name"] for p in user_team["playing_11"]] if user_team["playing_11"] else list(player_map.keys())[:11]
-            new_p11 = st.multiselect("Select Your Starting XI Lineup Starters:", options=list(player_map.keys()), default=current_p11, key=f"hub_p11_{user_team['team_name']}")
-            remaining_squad = [n for n in player_map.keys() if n not in new_p11]
-            new_sub = st.selectbox("Assign Playing 12 Impact Sub Slot:", options=remaining_squad if remaining_squad else ["None"])
-            if st.button("💾 Apply Tactics Layout", use_container_width=True):
-                user_team["playing_11"] = [player_map[n] for n in new_p11]
-                user_team["impact_player"] = player_map[new_sub] if new_sub != "None" else None
-                st.success("Roster configurations stored!")
-        with col_preview:
-            for p in user_team["squad"]:
-                is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
-                color_tag = "#38BDF8" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#475569")
-                st.markdown(f"<div style='padding:12px; border-radius:10px; background-color:#0F172A; border:1px solid #1E293B; margin-bottom:8px; border-left:5px solid {color_tag};'><strong>{p['name']}</strong> — OVR {p['rating']} ({p['role']})<br/><small>Status: {is_starter}</small></div>", unsafe_allow_html=True)
+        if user_team:
+            st.subheader(f"👥 Roster: {user_team['team_name']}")
+            col_selects, col_preview = st.columns([2, 3])
+            with col_selects:
+                player_map = {p["name"]: p for p in user_team["squad"]}
+                current_p11 = [p["name"] for p in user_team["playing_11"]] if user_team["playing_11"] else list(player_map.keys())[:11]
+                new_p11 = st.multiselect("Select Your Starting XI Lineup Starters:", options=list(player_map.keys()), default=current_p11, key=f"hub_p11_{user_team['team_name']}")
+                remaining_squad = [n for n in player_map.keys() if n not in new_p11]
+                new_sub = st.selectbox("Assign Playing 12 Impact Sub Slot:", options=remaining_squad if remaining_squad else ["None"])
+                if st.button("💾 Apply Tactics Layout", use_container_width=True):
+                    user_team["playing_11"] = [player_map[n] for n in new_p11]
+                    user_team["impact_player"] = player_map[new_sub] if new_sub != "None" else None
+                    st.success("Roster configurations stored!")
+            with col_preview:
+                for p in user_team["squad"]:
+                    is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
+                    color_tag = "#38BDF8" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#475569")
+                    st.markdown(f"<div style='padding:12px; border-radius:10px; background-color:#0F172A; border:1px solid #1E293B; margin-bottom:8px; border-left:5px solid {color_tag};'><strong>{p['name']}</strong> — OVR {p['rating']} ({p['role']})<br/><small>Status: {is_starter}</small></div>", unsafe_allow_html=True)
 
     # --- TAB 3: STANDINGS ---
     with tab_table:
@@ -541,72 +577,73 @@ elif st.session_state.game_stage == "dashboard":
             st.markdown("### 🟣 Purple Cap Leaderboard")
             for idx, (name, wck) in enumerate(sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]): st.write(f"**{idx+1}. {name}** — {wck} wickets")
 
-    # --- TAB 5: OFFICE CONSOLE (Tied to switcher context) ---
+    # --- TAB 5: OFFICE CONSOLE ---
     with tab_career:
-        opp_team = next(t for t in st.session_state.teams if not t["is_human"])
-        col_met1, col_met2, col_met3 = st.columns(3)
-        with col_met1: st.metric("Franchise Points", user_team["points"])
-        with col_met2: st.metric("Locker Morale", f"{user_team['morale']}%")
-        with col_met3: st.metric("Budget Remaining", f"₹{user_team['purse']/100:.2f} CR")
-        st.divider()
-        
-        col_sim1, col_sim2 = st.columns(2)
-        with col_sim1:
-            if st.button("🎮 Enter Live Ball-by-Ball Match Arena", type="primary", use_container_width=True):
-                st.session_state.live_match_state = {
-                    "user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "bat_team": user_team["team_name"], "bowl_team": opp_team["team_name"],
-                    "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], "bat_roster_current": user_team["playing_11"], "bowl_roster_current": opp_team["playing_11"],
-                    "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0, "innings_1_bat_final": [], "innings_1_bowl_final": [], "bat_card_raw": {}, "bowl_card_raw": {}
-                }
-                st.rerun()
-        with col_sim2:
-            if st.button("⚡ Fast Skip Match via Auto Simulation Loops", use_container_width=True):
-                boost_role = st.session_state.current_venue["boost_role"]
-                boost_amt = st.session_state.current_venue["boost_amount"]
-                random.shuffle(st.session_state.teams)
-                for i in range(0, len(st.session_state.teams) - 1, 2):
-                    t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-                    t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
-                    t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
-                    p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
-                    t1_runs, t2_runs = random.randint(140, 220), random.randint(130, 210)
-                    t2_wickets = random.randint(2, 10)
-                    
-                    if p1 > p2:
-                        t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
-                        headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
-                    else:
-                        t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
-                        headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
+        if user_team:
+            opp_team = next(t for t in st.session_state.teams if not t["is_human"])
+            col_met1, col_met2, col_met3 = st.columns(3)
+            with col_met1: st.metric("Franchise Points", user_team["points"])
+            with col_met2: st.metric("Locker Morale", f"{user_team['morale']}%")
+            with col_met3: st.metric("Budget Remaining", f"₹{user_team['purse']/100:.2f} CR")
+            st.divider()
+            
+            col_sim1, col_sim2 = st.columns(2)
+            with col_sim1:
+                if st.button("🎮 Enter Live Ball-by-Ball Match Arena", type="primary", use_container_width=True):
+                    st.session_state.live_match_state = {
+                        "user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "bat_team": user_team["team_name"], "bowl_team": opp_team["team_name"],
+                        "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], "bat_roster_current": user_team["playing_11"], "bowl_roster_current": opp_team["playing_11"],
+                        "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0, "innings_1_bat_final": [], "innings_1_bowl_final": [], "bat_card_raw": {}, "bowl_card_raw": {}
+                    }
+                    st.rerun()
+            with col_sim2:
+                if st.button("⚡ Fast Skip Match via Auto Simulation Loops", use_container_width=True):
+                    boost_role = st.session_state.current_venue["boost_role"]
+                    boost_amt = st.session_state.current_venue["boost_amount"]
+                    random.shuffle(st.session_state.teams)
+                    for i in range(0, len(st.session_state.teams) - 1, 2):
+                        t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
+                        t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
+                        t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
+                        p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
+                        t1_runs, t2_runs = random.randint(140, 220), random.randint(130, 210)
+                        t2_wickets = random.randint(2, 10)
                         
-                    inn1_bat_list, inn1_bowl_list = [], []
-                    for idx, p in enumerate(t1["playing_11"]):
-                        r = random.randint(35, 85) if idx < 3 else random.randint(0, 35)
-                        b = int(r / 1.3) + 1
-                        inn1_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 2, "6s": 1, "S/R": round((r/b)*100, 2)})
-                        st.session_state.stats_runs[p["name"]] = st.session_state.stats_runs.get(p["name"], 0) + r
-                    for idx, p in enumerate(t2["playing_11"]):
-                        is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
-                        w = random.randint(1, 3) if is_bowl else 0
-                        rc = random.randint(20, 40) if is_bowl else 0
-                        inn1_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
-                        if w > 0: st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w
+                        if p1 > p2:
+                            t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
+                            headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
+                        else:
+                            t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
+                            headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
+                            
+                        inn1_bat_list, inn1_bowl_list = [], []
+                        for idx, p in enumerate(t1["playing_11"]):
+                            r = random.randint(35, 85) if idx < 3 else random.randint(0, 35)
+                            b = int(r / 1.3) + 1
+                            inn1_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 2, "6s": 1, "S/R": round((r/b)*100, 2)})
+                            st.session_state.stats_runs[p["name"]] = st.session_state.stats_runs.get(p["name"], 0) + r
+                        for idx, p in enumerate(t2["playing_11"]):
+                            is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
+                            w = random.randint(1, 3) if is_bowl else 0
+                            rc = random.randint(20, 40) if is_bowl else 0
+                            inn1_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
+                            if w > 0: st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w
 
-                    inn2_bat_list, inn2_bowl_list = [], []
-                    inn2_ytb = [p["name"] for p in t2["playing_11"][t2_wickets:]] if t2_wickets < 11 else []
-                    for idx, p in enumerate(t2["playing_11"]):
-                        if idx < t2_wickets:
-                            r = random.randint(10, 40); b = int(r / 1.2) + 1
-                            inn2_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 1, "6s": 1, "S/R": round((r/b)*100, 2)})
-                        else: inn2_bat_list.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
-                    for idx, p in enumerate(t1["playing_11"]):
-                        is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
-                        w = random.randint(1, 2) if is_bowl else 0; rc = random.randint(15, 35) if is_bowl else 0
-                        inn2_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
+                        inn2_bat_list, inn2_bowl_list = [], []
+                        inn2_ytb = [p["name"] for p in t2["playing_11"][t2_wickets:]] if t2_wickets < 11 else []
+                        for idx, p in enumerate(t2["playing_11"]):
+                            if idx < t2_wickets:
+                                r = random.randint(10, 40); b = int(r / 1.2) + 1
+                                inn2_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 1, "6s": 1, "S/R": round((r/b)*100, 2)})
+                            else: inn2_bat_list.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
+                        for idx, p in enumerate(t1["playing_11"]):
+                            is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
+                            w = random.randint(1, 2) if is_bowl else 0; rc = random.randint(15, 35) if is_bowl else 0
+                            inn2_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
 
-                    st.session_state.match_history.append({
-                        "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline, "detailed": True,
-                        "inn1_bat_team": t1["team_name"], "inn1_bowl_team": t2["team_name"], "inn2_bat_team": t2["team_name"], "inn2_bowl_team": t1["team_name"],
-                        "inn1_bat": inn1_bat_list, "inn1_bowl": inn1_bowl_list, "inn1_ytb": [], "inn2_bat": inn2_bat_list, "inn2_bowl": inn2_bowl_list, "inn2_ytb": inn2_ytb
-                    })
-                st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
+                        st.session_state.match_history.append({
+                            "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline, "detailed": True,
+                            "inn1_bat_team": t1["team_name"], "inn1_bowl_team": t2["team_name"], "inn2_bat_team": t2["team_name"], "inn2_bowl_team": t1["team_name"],
+                            "inn1_bat": inn1_bat_list, "inn1_bowl": inn1_bowl_list, "inn1_ytb": [], "inn2_bat": inn2_bat_list, "inn2_bowl": inn2_bowl_list, "inn2_ytb": inn2_ytb
+                        })
+                    st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
