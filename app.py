@@ -673,12 +673,25 @@ elif st.session_state.game_stage == "dashboard":
                                 t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
                                 headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
                                 
-                            # FAST SIMULATION TRAINING ITERATION PASS
+                          # FAST SIMULATION TRAINING ITERATION PASS
                             for t_curr in [t1, t2]:
                                 for p in t_curr["squad"]:
+                                    # Safe extraction & inline fallback initialization
+                                    p_rating = p.get("rating", p.get("OVR", 80))
+                                    p_dyn_pot = p.get("dyn_pot", p_rating)
+                                    
+                                    if "xp" not in p:
+                                        p["xp"] = 0
+                                    if "rating" not in p:
+                                        p["rating"] = p_rating
+                                    if "dyn_pot" not in p:
+                                        p["dyn_pot"] = p_dyn_pot
+
+                                    # Safely apply the XP gains
                                     p["xp"] += random.randint(15, 45)
                                     if p["xp"] >= 100:
-                                        if p["rating"] < p["dyn_pot"]: p["rating"] += 1
+                                        if p["rating"] < p["dyn_pot"]: 
+                                            p["rating"] += 1
                                         p["xp"] = 0
                                 
                             inn1_bat_list, inn1_bowl_list = [], []
