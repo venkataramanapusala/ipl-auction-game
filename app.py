@@ -22,242 +22,241 @@ VENUES = [
     {"name": "Narendra Modi Stadium (Ahmedabad)", "desc": "⚖️ Balanced Coliseum! Symmetrical boundaries favor a steady, disciplined game layout.", "boost_role": "Balanced", "boost_amount": 0}
 ]
 
-# --- MASTER 200 REAL-WORLD PLAYER EXPLICIT DATABASE ---
+# --- MASTER 200 REAL-WORLD PLAYER DATABASE WITH AGE, POTENTIAL, AND XP PIPELINES ---
 if "player_pool" not in st.session_state:
-    st.session_state.player_pool = [
+    raw_pool = [
         # === PURE BATSMEN (1 - 60) ===
-        {"name": "Virat Kohli", "role": "Batsman", "rating": 94, "base_price": 200},
-        {"name": "Suryakumar Yadav", "role": "Batsman", "rating": 93, "base_price": 150},
-        {"name": "Rohit Sharma", "role": "Batsman", "rating": 91, "base_price": 200},
-        {"name": "Travis Head", "role": "Batsman", "rating": 92, "base_price": 150},
-        {"name": "Shubman Gill", "role": "Batsman", "rating": 89, "base_price": 100},
-        {"name": "Yashasvi Jaiswal", "role": "Batsman", "rating": 90, "base_price": 100},
-        {"name": "Ruturaj Gaikwad", "role": "Batsman", "rating": 88, "base_price": 100},
-        {"name": "Rinku Singh", "role": "Batsman", "rating": 86, "base_price": 50},
-        {"name": "Sai Sudharsan", "role": "Batsman", "rating": 84, "base_price": 50},
-        {"name": "David Warner", "role": "Batsman", "rating": 85, "base_price": 100},
-        {"name": "Faf du Plessis", "role": "Batsman", "rating": 86, "base_price": 100},
-        {"name": "Kane Williamson", "role": "Batsman", "rating": 85, "base_price": 100},
-        {"name": "Tilak Varma", "role": "Batsman", "rating": 85, "base_price": 50},
-        {"name": "Shimron Hetmyer", "role": "Batsman", "rating": 83, "base_price": 75},
-        {"name": "Rovman Powell", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Rahul Tripathi", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Devdutt Padikkal", "role": "Batsman", "rating": 80, "base_price": 30},
-        {"name": "Prithvi Shaw", "role": "Batsman", "rating": 82, "base_price": 50},
-        {"name": "Mayank Agarwal", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Tristan Stubbs", "role": "Batsman", "rating": 86, "base_price": 50},
-        {"name": "Tim David", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Ajinkya Rahane", "role": "Batsman", "rating": 80, "base_price": 50},
-        {"name": "Manish Pandey", "role": "Batsman", "rating": 78, "base_price": 30},
-        {"name": "Sherfane Rutherford", "role": "Batsman", "rating": 80, "base_price": 40},
-        {"name": "Nehal Wadhera", "role": "Batsman", "rating": 81, "base_price": 20},
-        {"name": "Riyan Parag", "role": "Batsman", "rating": 84, "base_price": 30},
-        {"name": "Deepak Hooda", "role": "Batsman", "rating": 79, "base_price": 40},
-        {"name": "Ayush Badoni", "role": "Batsman", "rating": 80, "base_price": 20},
-        {"name": "Shahrukh Khan", "role": "Batsman", "rating": 82, "base_price": 40},
-        {"name": "Abdul Samad", "role": "Batsman", "rating": 79, "base_price": 20},
-        {"name": "David Miller", "role": "Batsman", "rating": 87, "base_price": 100},
-        {"name": "Steve Smith", "role": "Batsman", "rating": 83, "base_price": 200},
-        {"name": "Marnus Labuschagne", "role": "Batsman", "rating": 80, "base_price": 100},
-        {"name": "Harry Brook", "role": "Batsman", "rating": 86, "base_price": 150},
-        {"name": "Dawid Malan", "role": "Batsman", "rating": 82, "base_price": 75},
-        {"name": "Rilee Rossouw", "role": "Batsman", "rating": 83, "base_price": 75},
-        {"name": "Reeza Hendricks", "role": "Batsman", "rating": 81, "base_price": 50},
-        {"name": "Finn Allen", "role": "Batsman", "rating": 84, "base_price": 75},
-        {"name": "Glenn Phillips", "role": "Batsman", "rating": 85, "base_price": 50},
-        {"name": "Alex Hales", "role": "Batsman", "rating": 83, "base_price": 75},
-        {"name": "Chris Lynn", "role": "Batsman", "rating": 79, "base_price": 50},
-        {"name": "Evain Lewis", "role": "Batsman", "rating": 80, "base_price": 50},
-        {"name": "Brandon King", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Johnson Charles", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Pathum Nissanka", "role": "Batsman", "rating": 83, "base_price": 50},
-        {"name": "Charith Asalanka", "role": "Batsman", "rating": 84, "base_price": 50},
-        {"name": "Litton Das", "role": "Batsman", "rating": 78, "base_price": 50},
-        {"name": "Najmul Hossain Shanto", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Ibrahim Zadran", "role": "Batsman", "rating": 82, "base_price": 50},
-        {"name": "Najibullah Zadran", "role": "Batsman", "rating": 80, "base_price": 50},
-        {"name": "Paul Stirling", "role": "Batsman", "rating": 78, "base_price": 50},
-        {"name": "Harry Tector", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Karun Nair", "role": "Batsman", "rating": 79, "base_price": 30},
-        {"name": "Anmolpreet Singh", "role": "Batsman", "rating": 76, "base_price": 20},
-        {"name": "Subhranshu Senapati", "role": "Batsman", "rating": 75, "base_price": 20},
-        {"name": "Atharva Taide", "role": "Batsman", "rating": 77, "base_price": 20},
-        {"name": "Sameer Rizvi", "role": "Batsman", "rating": 81, "base_price": 30},
-        {"name": "Kumar Kushagra", "role": "Batsman", "rating": 78, "base_price": 20},
-        {"name": "Swastik Chikara", "role": "Batsman", "rating": 75, "base_price": 20},
-        {"name": "Angkrish Raghuvanshi", "role": "Batsman", "rating": 80, "base_price": 20},
+        {"name": "Virat Kohli", "role": "Batsman", "rating": 94, "base_price": 200, "age": 35},
+        {"name": "Suryakumar Yadav", "role": "Batsman", "rating": 93, "base_price": 150, "age": 33},
+        {"name": "Rohit Sharma", "role": "Batsman", "rating": 91, "base_price": 200, "age": 36},
+        {"name": "Travis Head", "role": "Batsman", "rating": 92, "base_price": 150, "age": 30},
+        {"name": "Shubman Gill", "role": "Batsman", "rating": 89, "base_price": 100, "age": 24},
+        {"name": "Yashasvi Jaiswal", "role": "Batsman", "rating": 90, "base_price": 100, "age": 22},
+        {"name": "Ruturaj Gaikwad", "role": "Batsman", "rating": 88, "base_price": 100, "age": 27},
+        {"name": "Rinku Singh", "role": "Batsman", "rating": 86, "base_price": 50, "age": 26},
+        {"name": "Sai Sudharsan", "role": "Batsman", "rating": 84, "base_price": 50, "age": 23},
+        {"name": "David Warner", "role": "Batsman", "rating": 85, "base_price": 100, "age": 37},
+        {"name": "Faf du Plessis", "role": "Batsman", "rating": 86, "base_price": 100, "age": 39},
+        {"name": "Kane Williamson", "role": "Batsman", "rating": 85, "base_price": 100, "age": 33},
+        {"name": "Tilak Varma", "role": "Batsman", "rating": 85, "base_price": 50, "age": 23},
+        {"name": "Shimron Hetmyer", "role": "Batsman", "rating": 83, "base_price": 75, "age": 27},
+        {"name": "Rovman Powell", "role": "Batsman", "rating": 84, "base_price": 75, "age": 30},
+        {"name": "Rahul Tripathi", "role": "Batsman", "rating": 81, "base_price": 30, "age": 33},
+        {"name": "Devdutt Padikkal", "role": "Batsman", "rating": 80, "base_price": 30, "age": 23},
+        {"name": "Prithvi Shaw", "role": "Batsman", "rating": 82, "base_price": 50, "age": 24},
+        {"name": "Mayank Agarwal", "role": "Batsman", "rating": 79, "base_price": 30, "age": 33},
+        {"name": "Tristan Stubbs", "role": "Batsman", "rating": 86, "base_price": 50, "age": 23},
+        {"name": "Tim David", "role": "Batsman", "rating": 84, "base_price": 75, "age": 28},
+        {"name": "Ajinkya Rahane", "role": "Batsman", "rating": 80, "base_price": 50, "age": 35},
+        {"name": "Manish Pandey", "role": "Batsman", "rating": 78, "base_price": 30, "age": 34},
+        {"name": "Sherfane Rutherford", "role": "Batsman", "rating": 80, "base_price": 40, "age": 25},
+        {"name": "Nehal Wadhera", "role": "Batsman", "rating": 81, "base_price": 20, "age": 23},
+        {"name": "Riyan Parag", "role": "Batsman", "rating": 84, "base_price": 30, "age": 22},
+        {"name": "Deepak Hooda", "role": "Batsman", "rating": 79, "base_price": 40, "age": 29},
+        {"name": "Ayush Badoni", "role": "Batsman", "rating": 80, "base_price": 20, "age": 24},
+        {"name": "Shahrukh Khan", "role": "Batsman", "rating": 82, "base_price": 40, "age": 30},
+        {"name": "Abdul Samad", "role": "Batsman", "rating": 79, "base_price": 20, "age": 24},
+        {"name": "David Miller", "role": "Batsman", "rating": 87, "base_price": 100, "age": 34},
+        {"name": "Steve Smith", "role": "Batsman", "rating": 83, "base_price": 200, "age": 34},
+        {"name": "Marnus Labuschagne", "role": "Batsman", "rating": 80, "base_price": 100, "age": 29},
+        {"name": "Harry Brook", "role": "Batsman", "rating": 86, "base_price": 150, "age": 25},
+        {"name": "Dawid Malan", "role": "Batsman", "rating": 82, "base_price": 75, "age": 36},
+        {"name": "Rilee Rossouw", "role": "Batsman", "rating": 83, "base_price": 75, "age": 34},
+        {"name": "Reeza Hendricks", "role": "Batsman", "rating": 81, "base_price": 50, "age": 36},
+        {"name": "Finn Allen", "role": "Batsman", "rating": 84, "base_price": 75, "age": 25},
+        {"name": "Glenn Phillips", "role": "Batsman", "rating": 85, "base_price": 50, "age": 27},
+        {"name": "Alex Hales", "role": "Batsman", "rating": 83, "base_price": 75, "age": 37},
+        {"name": "Chris Lynn", "role": "Batsman", "rating": 79, "base_price": 50, "age": 36},
+        {"name": "Evain Lewis", "role": "Batsman", "rating": 80, "base_price": 50, "age": 34},
+        {"name": "Brandon King", "role": "Batsman", "rating": 81, "base_price": 30, "age": 31},
+        {"name": "Johnson Charles", "role": "Batsman", "rating": 79, "base_price": 30, "age": 37},
+        {"name": "Pathum Nissanka", "role": "Batsman", "rating": 83, "base_price": 50, "age": 25},
+        {"name": "Charith Asalanka", "role": "Batsman", "rating": 84, "base_price": 50, "age": 26},
+        {"name": "Litton Das", "role": "Batsman", "rating": 78, "base_price": 50, "age": 29},
+        {"name": "Najmul Hossain Shanto", "role": "Batsman", "rating": 79, "base_price": 30, "age": 25},
+        {"name": "Ibrahim Zadran", "role": "Batsman", "rating": 82, "base_price": 50, "age": 24},
+        {"name": "Najibullah Zadran", "role": "Batsman", "rating": 80, "base_price": 50, "age": 33},
+        {"name": "Paul Stirling", "role": "Batsman", "rating": 78, "base_price": 50, "age": 35},
+        {"name": "Harry Tector", "role": "Batsman", "rating": 81, "base_price": 30, "age": 26},
+        {"name": "Karun Nair", "role": "Batsman", "rating": 79, "base_price": 30, "age": 32},
+        {"name": "Anmolpreet Singh", "role": "Batsman", "rating": 76, "base_price": 20, "age": 26},
+        {"name": "Subhranshu Senapati", "role": "Batsman", "rating": 75, "base_price": 20, "age": 29},
+        {"name": "Atharva Taide", "role": "Batsman", "rating": 77, "base_price": 20, "age": 26},
+        {"name": "Sameer Rizvi", "role": "Batsman", "rating": 81, "base_price": 30, "age": 22},
+        {"name": "Kumar Kushagra", "role": "Batsman", "rating": 78, "base_price": 20, "age": 21},
+        {"name": "Swastik Chikara", "role": "Batsman", "rating": 75, "base_price": 20, "age": 21},
+        {"name": "Angkrish Raghuvanshi", "role": "Batsman", "rating": 80, "base_price": 20, "age": 21},
 
         # === PURE BOWLERS (61 - 120) ===
-        {"name": "Jasprit Bumrah", "role": "Bowler", "rating": 96, "base_price": 200},
-        {"name": "Rashid Khan", "role": "Bowler", "rating": 94, "base_price": 150},
-        {"name": "Pat Cummins", "role": "Bowler", "rating": 92, "base_price": 150},
-        {"name": "Mitchell Starc", "role": "Bowler", "rating": 91, "base_price": 150},
-        {"name": "Trent Boult", "role": "Bowler", "rating": 90, "base_price": 100},
-        {"name": "Mohammed Shami", "role": "Bowler", "rating": 91, "base_price": 150},
-        {"name": "Kuldeep Yadav", "role": "Bowler", "rating": 89, "base_price": 100},
-        {"name": "Yuzvendra Chahal", "role": "Bowler", "rating": 87, "base_price": 75},
-        {"name": "Matheesha Pathirana", "role": "Bowler", "rating": 88, "base_price": 50},
-        {"name": "Arshdeep Singh", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Kagiso Rabada", "role": "Bowler", "rating": 89, "base_price": 100},
-        {"name": "Anrich Nortje", "role": "Bowler", "rating": 85, "base_price": 75},
-        {"name": "Mohammed Siraj", "role": "Bowler", "rating": 86, "base_price": 100},
-        {"name": "Avesh Khan", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Ravi Bishnoi", "role": "Bowler", "rating": 85, "base_price": 50},
-        {"name": "Maheesh Theekshana", "role": "Bowler", "rating": 84, "base_price": 50},
-        {"name": "Adam Zampa", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Nandre Burger", "role": "Bowler", "rating": 82, "base_price": 40},
-        {"name": "Khaleel Ahmed", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Mukesh Kumar", "role": "Bowler", "rating": 82, "base_price": 30},
-        {"name": "T Natarajan", "role": "Bowler", "rating": 84, "base_price": 50},
-        {"name": "Sandeep Sharma", "role": "Bowler", "rating": 83, "base_price": 40},
-        {"name": "Mohit Sharma", "role": "Bowler", "rating": 81, "base_price": 30},
-        {"name": "Deepak Chahar", "role": "Bowler", "rating": 82, "base_price": 75},
-        {"name": "Shardul Thakur", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Bhuvneshwar Kumar", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Umran Malik", "role": "Bowler", "rating": 79, "base_price": 30},
-        {"name": "Mayank Yadav", "role": "Bowler", "rating": 84, "base_price": 20},
-        {"name": "Vaibhav Arora", "role": "Bowler", "rating": 80, "base_price": 20},
-        {"name": "Harshit Rana", "role": "Bowler", "rating": 83, "base_price": 20},
-        {"name": "Tushar Deshpande", "role": "Bowler", "rating": 81, "base_price": 30},
-        {"name": "Sai Kishore", "role": "Bowler", "rating": 80, "base_price": 20},
-        {"name": "Varun Chakaravarthy", "role": "Bowler", "rating": 86, "base_price": 50},
-        {"name": "Lockie Ferguson", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Josh Hazlewood", "role": "Bowler", "rating": 89, "base_price": 200},
-        {"name": "Tim Southee", "role": "Bowler", "rating": 84, "base_price": 75},
-        {"name": "Matt Henry", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Ish Sodhi", "role": "Bowler", "rating": 81, "base_price": 50},
-        {"name": "Adil Rashid", "role": "Bowler", "rating": 85, "base_price": 75},
-        {"name": "Reece Topley", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Mark Wood", "role": "Bowler", "rating": 86, "base_price": 150},
-        {"name": "Gus Atkinson", "role": "Bowler", "rating": 82, "base_price": 100},
-        {"name": "Tabraiz Shamsi", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Lungi Ngidi", "role": "Bowler", "rating": 83, "base_price": 75},
-        {"name": "Gerald Coetzee", "role": "Bowler", "rating": 85, "base_price": 50},
-        {"name": "Marco Jansen", "role": "Bowler", "rating": 86, "base_price": 75},
-        {"name": "Alzarri Joseph", "role": "Bowler", "rating": 82, "base_price": 100},
-        {"name": "Shamar Joseph", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Akeal Hosein", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Mujeeb Ur Rahman", "role": "Bowler", "rating": 84, "base_price": 100},
-        {"name": "Naveen-ul-Haq", "role": "Bowler", "rating": 83, "base_price": 50},
-        {"name": "Fazalhaq Farooqi", "role": "Bowler", "rating": 84, "base_price": 50},
-        {"name": "Mustafizur Rahman", "role": "Bowler", "rating": 85, "base_price": 200},
-        {"name": "Taskin Ahmed", "role": "Bowler", "rating": 81, "base_price": 75},
-        {"name": "Dushmantha Chameera", "role": "Bowler", "rating": 79, "base_price": 50},
-        {"name": "Dilshan Madushanka", "role": "Bowler", "rating": 82, "base_price": 50},
-        {"name": "Nuwan Thushara", "role": "Bowler", "rating": 81, "base_price": 50},
-        {"name": "Sandeep Warrier", "role": "Bowler", "rating": 77, "base_price": 20},
-        {"name": "Chetan Sakariya", "role": "Bowler", "rating": 78, "base_price": 30},
+        {"name": "Jasprit Bumrah", "role": "Bowler", "rating": 96, "base_price": 200, "age": 30},
+        {"name": "Rashid Khan", "role": "Bowler", "rating": 94, "base_price": 150, "age": 25},
+        {"name": "Pat Cummins", "role": "Bowler", "rating": 92, "base_price": 150, "age": 31},
+        {"name": "Mitchell Starc", "role": "Bowler", "rating": 91, "base_price": 150, "age": 34},
+        {"name": "Trent Boult", "role": "Bowler", "rating": 90, "base_price": 100, "age": 34},
+        {"name": "Mohammed Shami", "role": "Bowler", "rating": 91, "base_price": 150, "age": 33},
+        {"name": "Kuldeep Yadav", "role": "Bowler", "rating": 89, "base_price": 100, "age": 29},
+        {"name": "Yuzvendra Chahal", "role": "Bowler", "rating": 87, "base_price": 75, "age": 33},
+        {"name": "Matheesha Pathirana", "role": "Bowler", "rating": 88, "base_price": 50, "age": 21},
+        {"name": "Arshdeep Singh", "role": "Bowler", "rating": 86, "base_price": 75, "age": 25},
+        {"name": "Kagiso Rabada", "role": "Bowler", "rating": 89, "base_price": 100, "age": 29},
+        {"name": "Anrich Nortje", "role": "Bowler", "rating": 85, "base_price": 75, "age": 30},
+        {"name": "Mohammed Siraj", "role": "Bowler", "rating": 86, "base_price": 100, "age": 30},
+        {"name": "Avesh Khan", "role": "Bowler", "rating": 83, "base_price": 50, "age": 27},
+        {"name": "Ravi Bishnoi", "role": "Bowler", "rating": 85, "base_price": 50, "age": 23},
+        {"name": "Maheesh Theekshana", "role": "Bowler", "rating": 84, "base_price": 50, "age": 23},
+        {"name": "Adam Zampa", "role": "Bowler", "rating": 86, "base_price": 75, "age": 32},
+        {"name": "Nandre Burger", "role": "Bowler", "rating": 82, "base_price": 40, "age": 28},
+        {"name": "Khaleel Ahmed", "role": "Bowler", "rating": 83, "base_price": 50, "age": 26},
+        {"name": "Mukesh Kumar", "role": "Bowler", "rating": 82, "base_price": 30, "age": 32},
+        {"name": "T Natarajan", "role": "Bowler", "rating": 84, "base_price": 50, "age": 33},
+        {"name": "Sandeep Sharma", "role": "Bowler", "rating": 83, "base_price": 40, "age": 31},
+        {"name": "Mohit Sharma", "role": "Bowler", "rating": 81, "base_price": 30, "age": 37},
+        {"name": "Deepak Chahar", "role": "Bowler", "rating": 82, "base_price": 75, "age": 31},
+        {"name": "Shardul Thakur", "role": "Bowler", "rating": 81, "base_price": 75, "age": 32},
+        {"name": "Harshal Patel", "role": "Bowler", "rating": 83, "base_price": 50, "age": 33},
+        {"name": "Bhuvneshwar Kumar", "role": "Bowler", "rating": 82, "base_price": 50, "age": 36},
+        {"name": "Umran Malik", "role": "Bowler", "rating": 79, "base_price": 30, "age": 24},
+        {"name": "Mayank Yadav", "role": "Bowler", "rating": 84, "base_price": 20, "age": 22},
+        {"name": "Vaibhav Arora", "role": "Bowler", "rating": 80, "base_price": 20, "age": 26},
+        {"name": "Harshit Rana", "role": "Bowler", "rating": 83, "base_price": 20, "age": 24},
+        {"name": "Tushar Deshpande", "role": "Bowler", "rating": 81, "base_price": 30, "age": 29},
+        {"name": "Sai Kishore", "role": "Bowler", "rating": 80, "base_price": 20, "age": 27},
+        {"name": "Varun Chakaravarthy", "role": "Bowler", "rating": 86, "base_price": 50, "age": 34},
+        {"name": "Lockie Ferguson", "role": "Bowler", "rating": 83, "base_price": 75, "age": 33},
+        {"name": "Josh Hazlewood", "role": "Bowler", "rating": 89, "base_price": 200, "age": 35},
+        {"name": "Tim Southee", "role": "Bowler", "rating": 84, "base_price": 75, "age": 37},
+        {"name": "Matt Henry", "role": "Bowler", "rating": 83, "base_price": 75, "age": 34},
+        {"name": "Ish Sodhi", "role": "Bowler", "rating": 81, "base_price": 50, "age": 33},
+        {"name": "Adil Rashid", "role": "Bowler", "rating": 85, "base_price": 75, "age": 38},
+        {"name": "Reece Topley", "role": "Bowler", "rating": 83, "base_price": 75, "age": 32},
+        {"name": "Mark Wood", "role": "Bowler", "rating": 86, "base_price": 150, "age": 36},
+        {"name": "Gus Atkinson", "role": "Bowler", "rating": 82, "base_price": 100, "age": 28},
+        {"name": "Tabraiz Shamsi", "role": "Bowler", "rating": 82, "base_price": 50, "age": 36},
+        {"name": "Lungi Ngidi", "role": "Bowler", "rating": 83, "base_price": 75, "age": 29},
+        {"name": "Gerald Coetzee", "role": "Bowler", "rating": 85, "base_price": 50, "age": 25},
+        {"name": "Marco Jansen", "role": "Bowler", "rating": 86, "base_price": 75, "age": 26},
+        {"name": "Alzarri Joseph", "role": "Bowler", "rating": 82, "base_price": 100, "age": 27},
+        {"name": "Shamar Joseph", "role": "Bowler", "rating": 83, "base_price": 50, "age": 26},
+        {"name": "Akeal Hosein", "role": "Bowler", "rating": 82, "base_price": 50, "age": 33},
+        {"name": "Mujeeb Ur Rahman", "role": "Bowler", "rating": 84, "base_price": 100, "age": 25},
+        {"name": "Naveen-ul-Haq", "role": "Bowler", "rating": 83, "base_price": 50, "age": 26},
+        {"name": "Fazalhaq Farooqi", "role": "Bowler", "rating": 84, "base_price": 50, "age": 25},
+        {"name": "Mustafizur Rahman", "role": "Bowler", "rating": 85, "base_price": 200, "age": 30},
+        {"name": "Taskin Ahmed", "role": "Bowler", "rating": 81, "base_price": 75, "age": 31},
+        {"name": "Dushmantha Chameera", "role": "Bowler", "rating": 79, "base_price": 50, "age": 34},
+        {"name": "Dilshan Madushanka", "role": "Bowler", "rating": 82, "base_price": 50, "age": 25},
+        {"name": "Nuwan Thushara", "role": "Bowler", "rating": 81, "base_price": 50, "age": 31},
+        {"name": "Sandeep Warrier", "role": "Bowler", "rating": 77, "base_price": 20, "age": 35},
+        {"name": "Chetan Sakariya", "role": "Bowler", "rating": 78, "base_price": 30, "age": 26},
 
         # === ALL-ROUNDERS (121 - 170) ===
-        {"name": "Hardik Pandya", "role": "All-Rounder", "rating": 91, "base_price": 150},
-        {"name": "Ravindra Jadeja", "role": "All-Rounder", "rating": 90, "base_price": 150},
-        {"name": "Axar Patel", "role": "All-Rounder", "rating": 89, "base_price": 100},
-        {"name": "Sunil Narine", "role": "All-Rounder", "rating": 92, "base_price": 100},
-        {"name": "Andre Russell", "role": "All-Rounder", "rating": 91, "base_price": 150},
-        {"name": "Glenn Maxwell", "role": "All-Rounder", "rating": 86, "base_price": 100},
-        {"name": "Marcus Stoinis", "role": "All-Rounder", "rating": 86, "base_price": 75},
-        {"name": "Liam Livingstone", "role": "All-Rounder", "rating": 85, "base_price": 75},
-        {"name": "Sam Curran", "role": "All-Rounder", "rating": 85, "base_price": 100},
-        {"name": "Cameron Green", "role": "All-Rounder", "rating": 86, "base_price": 100},
-        {"name": "Krunal Pandya", "role": "All-Rounder", "rating": 82, "base_price": 50},
-        {"name": "Nitish Kumar Reddy", "role": "All-Rounder", "rating": 83, "base_price": 20},
-        {"name": "Abhishek Sharma", "role": "All-Rounder", "rating": 87, "base_price": 30},
-        {"name": "Venkatesh Iyer", "role": "All-Rounder", "rating": 83, "base_price": 50},
-        {"name": "Shivam Dube", "role": "All-Rounder", "rating": 86, "base_price": 50},
-        {"name": "Washington Sundar", "role": "All-Rounder", "rating": 81, "base_price": 50},
-        {"name": "Moeen Ali", "role": "All-Rounder", "rating": 82, "base_price": 50},
-        {"name": "Mitchell Marsh", "role": "All-Rounder", "rating": 84, "base_price": 75},
-        {"name": "Romario Shepherd", "role": "All-Rounder", "rating": 80, "base_price": 40},
-        {"name": "Shakib Al Hasan", "role": "All-Rounder", "rating": 87, "base_price": 100},
-        {"name": "Ben Stokes", "role": "All-Rounder", "rating": 88, "base_price": 200},
-        {"name": "Chris Woakes", "role": "All-Rounder", "rating": 83, "base_price": 100},
-        {"name": "Daryl Mitchell", "role": "All-Rounder", "rating": 87, "base_price": 100},
-        {"name": "Rachin Ravindra", "role": "All-Rounder", "rating": 86, "base_price": 50},
-        {"name": "Jimmy Neesham", "role": "All-Rounder", "rating": 81, "base_price": 75},
-        {"name": "Mitchell Santner", "role": "All-Rounder", "rating": 84, "base_price": 50},
-        {"name": "Wanindu Hasaranga", "role": "All-Rounder", "rating": 89, "base_price": 150},
-        {"name": "Angelo Mathews", "role": "All-Rounder", "rating": 80, "base_price": 50},
-        {"name": "Dasun Shanaka", "role": "All-Rounder", "rating": 79, "base_price": 50},
-        {"name": "Dunith Wellalage", "role": "All-Rounder", "rating": 81, "base_price": 30},
-        {"name": "Mohammad Nabi", "role": "All-Rounder", "rating": 83, "base_price": 75},
-        {"name": "Azmatullah Omarzai", "role": "All-Rounder", "rating": 84, "base_price": 50},
-        {"name": "Gulbadin Naib", "role": "All-Rounder", "rating": 81, "base_price": 50},
-        {"name": "Jason Holder", "role": "All-Rounder", "rating": 82, "base_price": 100},
-        {"name": "Kyle Mayers", "role": "All-Rounder", "rating": 83, "base_price": 75},
-        {"name": "Roston Chase", "role": "All-Rounder", "rating": 80, "base_price": 50},
-        {"name": "Mehidy Hasan Miraz", "role": "All-Rounder", "rating": 82, "base_price": 50},
-        {"name": "Sikandar Raza", "role": "All-Rounder", "rating": 84, "base_price": 50},
-        {"name": "Sean Williams", "role": "All-Rounder", "rating": 80, "base_price": 50},
-        {"name": "Rishi Dhawan", "role": "All-Rounder", "rating": 77, "base_price": 30},
-        {"name": "Shahbaz Ahmed", "role": "All-Rounder", "rating": 82, "base_price": 30},
-        {"name": "Lalit Yadav", "role": "All-Rounder", "rating": 78, "base_price": 20},
-        {"name": "Mahipal Lomror", "role": "All-Rounder", "rating": 81, "base_price": 20},
-        {"name": "Ramandeep Singh", "role": "All-Rounder", "rating": 82, "base_price": 20},
-        {"name": "Prerak Mankad", "role": "All-Rounder", "rating": 76, "base_price": 20},
-        {"name": "Atharva Ankolekar", "role": "All-Rounder", "rating": 74, "base_price": 20},
-        {"name": "Shams Mulani", "role": "All-Rounder", "rating": 78, "base_price": 20},
-        {"name": "Raj Angad Bawa", "role": "All-Rounder", "rating": 76, "base_price": 20},
-        {"name": "Nishant Sindhu", "role": "All-Rounder", "rating": 77, "base_price": 20},
-        {"name": "Kamlesh Nagarkoti", "role": "All-Rounder", "rating": 76, "base_price": 30},
+        {"name": "Hardik Pandya", "role": "All-Rounder", "rating": 91, "base_price": 150, "age": 30},
+        {"name": "Ravindra Jadeja", "role": "All-Rounder", "rating": 90, "base_price": 150, "age": 35},
+        {"name": "Axar Patel", "role": "All-Rounder", "rating": 89, "base_price": 100, "age": 30},
+        {"name": "Sunil Narine", "role": "All-Rounder", "rating": 92, "base_price": 100, "age": 36},
+        {"name": "Andre Russell", "role": "All-Rounder", "rating": 91, "base_price": 150, "age": 36},
+        {"name": "Glenn Maxwell", "role": "All-Rounder", "rating": 86, "base_price": 100, "age": 35},
+        {"name": "Marcus Stoinis", "role": "All-Rounder", "rating": 86, "base_price": 75, "age": 34},
+        {"name": "Liam Livingstone", "role": "All-Rounder", "rating": 85, "base_price": 75, "age": 30},
+        {"name": "Sam Curran", "role": "All-Rounder", "rating": 85, "base_price": 100, "age": 26},
+        {"name": "Cameron Green", "role": "All-Rounder", "rating": 86, "base_price": 100, "age": 25},
+        {"name": "Krunal Pandya", "role": "All-Rounder", "rating": 82, "base_price": 50, "age": 33},
+        {"name": "Nitish Kumar Reddy", "role": "All-Rounder", "rating": 83, "base_price": 20, "age": 21},
+        {"name": "Abhishek Sharma", "role": "All-Rounder", "rating": 87, "base_price": 30, "age": 23},
+        {"name": "Venkatesh Iyer", "role": "All-Rounder", "rating": 83, "base_price": 50, "age": 29},
+        {"name": "Shivam Dube", "role": "All-Rounder", "rating": 86, "base_price": 50, "age": 31},
+        {"name": "Washington Sundar", "role": "All-Rounder", "rating": 81, "base_price": 50, "age": 24},
+        {"name": "Moeen Ali", "role": "All-Rounder", "rating": 82, "base_price": 50, "age": 39},
+        {"name": "Mitchell Marsh", "role": "All-Rounder", "rating": 84, "base_price": 75, "age": 32},
+        {"name": "Romario Shepherd", "role": "All-Rounder", "rating": 80, "base_price": 40, "age": 29},
+        {"name": "Shakib Al Hasan", "role": "All-Rounder", "rating": 87, "base_price": 100, "age": 39},
+        {"name": "Ben Stokes", "role": "All-Rounder", "rating": 88, "base_price": 200, "age": 35},
+        {"name": "Chris Woakes", "role": "All-Rounder", "rating": 83, "base_price": 100, "age": 37},
+        {"name": "Daryl Mitchell", "role": "All-Rounder", "rating": 87, "base_price": 100, "age": 35},
+        {"name": "Rachin Ravindra", "role": "All-Rounder", "rating": 86, "base_price": 50, "age": 24},
+        {"name": "Jimmy Neesham", "role": "All-Rounder", "rating": 81, "base_price": 75, "age": 35},
+        {"name": "Mitchell Santner", "role": "All-Rounder", "rating": 84, "base_price": 50, "age": 34},
+        {"name": "Wanindu Hasaranga", "role": "All-Rounder", "rating": 89, "base_price": 150, "age": 26},
+        {"name": "Angelo Mathews", "role": "All-Rounder", "rating": 80, "base_price": 50, "age": 39},
+        {"name": "Dasun Shanaka", "role": "All-Rounder", "rating": 79, "base_price": 50, "age": 34},
+        {"name": "Dunith Wellalage", "role": "All-Rounder", "rating": 81, "base_price": 30, "age": 23},
+        {"name": "Mohammad Nabi", "role": "All-Rounder", "rating": 83, "base_price": 75, "age": 41},
+        {"name": "Azmatullah Omarzai", "role": "All-Rounder", "rating": 84, "base_price": 50, "age": 26},
+        {"name": "Gulbadin Naib", "role": "All-Rounder", "rating": 81, "base_price": 50, "age": 35},
+        {"name": "Jason Holder", "role": "All-Rounder", "rating": 82, "base_price": 100, "age": 34},
+        {"name": "Kyle Mayers", "role": "All-Rounder", "rating": 83, "base_price": 75, "age": 33},
+        {"name": "Roston Chase", "role": "All-Rounder", "rating": 80, "base_price": 50, "age": 34},
+        {"name": "Mehidy Hasan Miraz", "role": "All-Rounder", "rating": 82, "base_price": 50, "age": 28},
+        {"name": "Sikandar Raza", "role": "All-Rounder", "rating": 84, "base_price": 50, "age": 40},
+        {"name": "Sean Williams", "role": "All-Rounder", "rating": 80, "base_price": 50, "age": 39},
+        {"name": "Rishi Dhawan", "role": "All-Rounder", "rating": 77, "base_price": 30, "age": 36},
+        {"name": "Shahbaz Ahmed", "role": "All-Rounder", "rating": 82, "base_price": 30, "age": 31},
+        {"name": "Lalit Yadav", "role": "All-Rounder", "rating": 78, "base_price": 20, "age": 29},
+        {"name": "Mahipal Lomror", "role": "All-Rounder", "rating": 81, "base_price": 20, "age": 26},
+        {"name": "Ramandeep Singh", "role": "All-Rounder", "rating": 82, "base_price": 20, "age": 28},
+        {"name": "Prerak Mankad", "role": "All-Rounder", "rating": 76, "base_price": 20, "age": 32},
+        {"name": "Atharva Ankolekar", "role": "All-Rounder", "rating": 74, "base_price": 20, "age": 25},
+        {"name": "Shams Mulani", "role": "All-Rounder", "rating": 78, "base_price": 20, "age": 31},
+        {"name": "Raj Angad Bawa", "role": "All-Rounder", "rating": 76, "base_price": 20, "age": 23},
+        {"name": "Nishant Sindhu", "role": "All-Rounder", "rating": 77, "base_price": 20, "age": 22},
+        {"name": "Kamlesh Nagarkoti", "role": "All-Rounder", "rating": 76, "base_price": 30, "age": 26},
 
         # === WICKET-KEEPERS (171 - 200) ===
-        {"name": "MS Dhoni", "role": "Wicket-Keeper", "rating": 88, "base_price": 100},
-        {"name": "Rishabh Pant", "role": "Wicket-Keeper", "rating": 91, "base_price": 200},
-        {"name": "Sanju Samson", "role": "Wicket-Keeper", "rating": 89, "base_price": 100},
-        {"name": "KL Rahul", "role": "Wicket-Keeper", "rating": 89, "base_price": 150},
-        {"name": "Ishan Kishan", "role": "Wicket-Keeper", "rating": 86, "base_price": 100},
-        {"name": "Nicholas Pooran", "role": "Wicket-Keeper", "rating": 92, "base_price": 150},
-        {"name": "Quinton de Kock", "role": "Wicket-Keeper", "rating": 86, "base_price": 100},
-        {"name": "Phil Salt", "role": "Wicket-Keeper", "rating": 88, "base_price": 75},
-        {"name": "Jos Buttler", "role": "Wicket-Keeper", "rating": 91, "base_price": 150},
-        {"name": "Dinesh Karthik", "role": "Wicket-Keeper", "rating": 82, "base_price": 50},
-        {"name": "Jitesh Sharma", "role": "Wicket-Keeper", "rating": 81, "base_price": 30},
-        {"name": "Dhruv Jurel", "role": "Wicket-Keeper", "rating": 83, "base_price": 20},
-        {"name": "Abishek Porel", "role": "Wicket-Keeper", "rating": 80, "base_price": 20},
-        {"name": "Anuj Rawat", "role": "Wicket-Keeper", "rating": 78, "base_price": 20},
-        {"name": "Wriddhiman Saha", "role": "Wicket-Keeper", "rating": 79, "base_price": 30},
-        {"name": "Jonny Bairstow", "role": "Wicket-Keeper", "rating": 87, "base_price": 150},
-        {"name": "Sam Billings", "role": "Wicket-Keeper", "rating": 82, "base_price": 100},
-        {"name": "Tom Latham", "role": "Wicket-Keeper", "rating": 81, "base_price": 75},
-        {"name": "Heinrich Klaasen", "role": "Wicket-Keeper", "rating": 93, "base_price": 150},
-        {"name": "Ryan Rickelton", "role": "Wicket-Keeper", "rating": 82, "base_price": 50},
-        {"name": "Rahmanullah Gurbaz", "role": "Wicket-Keeper", "rating": 85, "base_price": 50},
-        {"name": "Kusal Mendis", "role": "Wicket-Keeper", "rating": 83, "base_price": 50},
-        {"name": "Sadeera Samarawickrama", "role": "Wicket-Keeper", "rating": 81, "base_price": 30},
-        {"name": "Mushfiqur Rahim", "role": "Wicket-Keeper", "rating": 80, "base_price": 50},
-        {"name": "Shai Hope", "role": "Wicket-Keeper", "rating": 82, "base_price": 75},
-        {"name": "Sarfaraz Khan", "role": "Wicket-Keeper", "rating": 81, "base_price": 30},
-        {"name": "Narayan Jagadeesan", "role": "Wicket-Keeper", "rating": 79, "base_price": 20},
-        {"name": "Sheldon Jackson", "role": "Wicket-Keeper", "rating": 78, "base_price": 20},
-        {"name": "Baba Indrajith", "role": "Wicket-Keeper", "rating": 80, "base_price": 20},
-        {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50}
+        {"name": "MS Dhoni", "role": "Wicket-Keeper", "rating": 88, "base_price": 100, "age": 44},
+        {"name": "Rishabh Pant", "role": "Wicket-Keeper", "rating": 91, "base_price": 200, "age": 28},
+        {"name": "Sanju Samson", "role": "Wicket-Keeper", "rating": 89, "base_price": 100, "age": 29},
+        {"name": "KL Rahul", "role": "Wicket-Keeper", "rating": 89, "base_price": 150, "age": 34},
+        {"name": "Ishan Kishan", "role": "Wicket-Keeper", "rating": 86, "base_price": 100, "age": 27},
+        {"name": "Nicholas Pooran", "role": "Wicket-Keeper", "rating": 92, "base_price": 150, "age": 30},
+        {"name": "Quinton de Kock", "role": "Wicket-Keeper", "rating": 86, "base_price": 100, "age": 33},
+        {"name": "Phil Salt", "role": "Wicket-Keeper", "rating": 88, "base_price": 75, "age": 29},
+        {"name": "Jos Buttler", "role": "Wicket-Keeper", "rating": 91, "base_price": 150, "age": 35},
+        {"name": "Dinesh Karthik", "role": "Wicket-Keeper", "rating": 82, "base_price": 50, "age": 41},
+        {"name": "Jitesh Sharma", "role": "Wicket-Keeper", "rating": 81, "base_price": 30, "age": 31},
+        {"name": "Dhruv Jurel", "role": "Wicket-Keeper", "rating": 83, "base_price": 20, "age": 25},
+        {"name": "Abishek Porel", "role": "Wicket-Keeper", "rating": 80, "base_price": 20, "age": 21},
+        {"name": "Anuj Rawat", "role": "Wicket-Keeper", "rating": 78, "base_price": 20, "age": 26},
+        {"name": "Wriddhiman Saha", "role": "Wicket-Keeper", "rating": 79, "base_price": 30, "age": 41},
+        {"name": "Jonny Bairstow", "role": "Wicket-Keeper", "rating": 87, "base_price": 150, "age": 36},
+        {"name": "Sam Billings", "role": "Wicket-Keeper", "rating": 82, "base_price": 100, "age": 35},
+        {"name": "Tom Latham", "role": "Wicket-Keeper", "rating": 81, "base_price": 75, "age": 34},
+        {"name": "Heinrich Klaasen", "role": "Wicket-Keeper", "rating": 93, "base_price": 150, "age": 34},
+        {"name": "Ryan Rickelton", "role": "Wicket-Keeper", "rating": 82, "base_price": 50, "age": 29},
+        {"name": "Rahmanullah Gurbaz", "role": "Wicket-Keeper", "rating": 85, "base_price": 50, "age": 24},
+        {"name": "Kusal Mendis", "role": "Wicket-Keeper", "rating": 83, "base_price": 50, "age": 31},
+        {"name": "Sadeera Samarawickrama", "role": "Wicket-Keeper", "rating": 81, "base_price": 30, "age": 30},
+        {"name": "Mushfiqur Rahim", "role": "Wicket-Keeper", "rating": 80, "base_price": 50, "age": 39},
+        {"name": "Shai Hope", "role": "Wicket-Keeper", "rating": 82, "base_price": 75, "age": 32},
+        {"name": "Sarfaraz Khan", "role": "Wicket-Keeper", "rating": 81, "base_price": 30, "age": 28},
+        {"name": "Narayan Jagadeesan", "role": "Wicket-Keeper", "rating": 79, "base_price": 20, "age": 30},
+        {"name": "Sheldon Jackson", "role": "Wicket-Keeper", "rating": 78, "base_price": 20, "age": 39},
+        {"name": "Baba Indrajith", "role": "Wicket-Keeper", "rating": 80, "base_price": 20, "age": 32},
+        {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50, "age": 41}
     ]
+    
+    # Inject Development State variables into each player data structure
+    for p in raw_pool:
+        # Calculate ceiling based on biological age distribution
+        if p["age"] < 25:
+            p["base_pot"] = min(99, p["rating"] + random.randint(8, 14))
+        elif p["age"] < 30:
+            p["base_pot"] = min(96, p["rating"] + random.randint(2, 6))
+        else:
+            p["base_pot"] = p["rating"]
+        
+        p["dyn_pot"] = p["base_pot"]
+        p["xp"] = 0
+        p["plan"] = "Balanced Alignment"
+        p["match_rating_history"] = []
+        p["form"] = "Good"
+        
+    st.session_state.player_pool = raw_pool
     random.shuffle(st.session_state.player_pool)
 
-# --- VALUE LOGIC CORES ---
-def get_reasonable_val(player, current_index):
-    random.seed(current_index + 1000)
-    if player["rating"] >= 93: val = random.randint(1350, 1650)
-    elif player["rating"] >= 90: val = random.randint(950, 1300)
-    elif player["rating"] >= 86: val = random.randint(450, 950)
-    else: val = random.randint(80, 400)
-    random.seed() 
-    return val
-
-def get_player_trait(player):
-    if player["rating"] >= 93: return "👑 Legendary Icon Master"
-    if player["rating"] <= 80: return "🌱 Debutant Prospect"
-    if player["role"] == "Batsman": return "💥 Aggressive Finisher" if player["rating"] >= 88 else "🏏 Technical Batter"
-    elif player["role"] == "Bowler": return "🔥 Express Speed Bowler" if player["rating"] >= 88 else "🎯 Line Bowler"
-    elif player["role"] == "All-Rounder": return "🔀 Clutch All-Rounder"
-    elif player["role"] == "Wicket-Keeper": return "🧤 Fast Stumper"
-    return "🏏 Steady Asset"
-
-# --- PERSISTENT SEED ENGINE REGISTRATION ---
-for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "scouted_count", "scouted_players", "match_history", "stats_runs", "stats_wickets", "live_match_state"]:
+# --- ENGINE SESSION STATE INJECTIONS ---
+for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "match_history", "stats_runs", "stats_wickets", "live_match_state"]:
     if key not in st.session_state: 
-        st.session_state[key] = [] if "history" in key or "teams" in key or "players" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
+        st.session_state[key] = [] if "history" in key or "teams" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
 if "match_day" not in st.session_state: st.session_state.match_day = 1
 if "current_venue" not in st.session_state: st.session_state.current_venue = random.choice(VENUES)
 
@@ -373,7 +372,7 @@ elif st.session_state.game_stage == "auction":
         st.markdown(f"<div class='timer-text'>⏳ GAVEL FALLING IN: {st.session_state.timer_seconds + 1}s</div>", unsafe_allow_html=True)
         st.progress(st.session_state.timer_seconds / 4)
 
-        st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']}</div>", unsafe_allow_html=True)
+        st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']} | <strong>📅 Age:</strong> {player['age']}</div>", unsafe_allow_html=True)
         
         st.metric(
             label="Current High Bid Status", 
@@ -392,7 +391,7 @@ elif st.session_state.game_stage == "auction":
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
     
-    # Extract human manager options safely inside dashboard phase
+    # Extract human manager options safely inside dashboard stage
     human_squads = [t for t in st.session_state.teams if t["is_human"]]
     
     # RENDER GLOBAL CONSOLE SWITCHER IN CORNER
@@ -467,7 +466,22 @@ elif st.session_state.game_stage == "dashboard":
                         "inn1_bat_team": ms['user_team'], "inn1_bowl_team": ms['opp_team'], "inn2_bat_team": ms['opp_team'], "inn2_bowl_team": ms['user_team'],
                         "inn1_bat": ms['innings_1_bat_final'], "inn1_bowl": ms['innings_1_bowl_final'], "inn1_ytb": [], "inn2_bat": inn2_bat_final, "inn2_bowl": inn2_bowl_final, "inn2_ytb": inn2_yet_to_bat
                     })
-                    st.session_state.live_match_state = None; st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
+                    
+                    # MATCHDAY CONCLUSION TRAINING PASS: Apply matchday XP accumulation loops across the active playing roster elements
+                    for player in u_t["squad"]:
+                        is_starter = player in u_t["playing_11"]
+                        age_mult = 2.5 if player["age"] < 25 else 1.0
+                        plan_mult = 1.0 if player["plan"] == "Balanced Alignment" else 2.2
+                        status_mult = 1.5 if is_starter else 0.4
+                        
+                        xp_gained = int(35 * age_mult * plan_mult * status_mult)
+                        player["xp"] += xp_gained
+                        if player["xp"] >= 100:
+                            if player["rating"] < player["dyn_pot"]:
+                                player["rating"] += 1
+                            player["xp"] = 0
+                            
+                    st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
                 st.stop()
 
         curr_batsman_idx = min(ms['wickets'], 10)
@@ -542,10 +556,10 @@ elif st.session_state.game_stage == "dashboard":
                         st.table(match["inn2_bowl"])
         else: st.caption("Advance fixtures via the Office Suite tab.")
 
-    # --- TAB 2: ROSTER HUD ---
+    # --- TAB 2: ROSTER HUD & DEVELOPMENT PIPELINES ---
     with tab_roster:
         if user_team:
-            st.subheader(f"👥 Roster: {user_team['team_name']}")
+            st.subheader(f"👥 Squad Hub & Academy Trait Allocator: {user_team['team_name']}")
             col_selects, col_preview = st.columns([2, 3])
             with col_selects:
                 player_map = {p["name"]: p for p in user_team["squad"]}
@@ -558,10 +572,15 @@ elif st.session_state.game_stage == "dashboard":
                     user_team["impact_player"] = player_map[new_sub] if new_sub != "None" else None
                     st.success("Roster configurations stored!")
             with col_preview:
+                st.markdown("#### 🏋️ Active Squad Matrix & Development Assignment")
                 for p in user_team["squad"]:
                     is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
                     color_tag = "#38BDF8" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#475569")
-                    st.markdown(f"<div style='padding:12px; border-radius:10px; background-color:#0F172A; border:1px solid #1E293B; margin-bottom:8px; border-left:5px solid {color_tag};'><strong>{p['name']}</strong> — OVR {p['rating']} ({p['role']})<br/><small>Status: {is_starter}</small></div>", unsafe_allow_html=True)
+                    
+                    with st.expander(f"{p['name']} (OVR {p['rating']} | Age {p['age']}) — {is_starter}"):
+                        p["plan"] = st.selectbox("Strategic Target Development Plan:", ["Balanced Alignment", "Focused Skill Burst", "Tactical IQ Training"], key=f"plan_sel_{p['name']}", index=0 if p["plan"] == "Balanced Alignment" else (1 if p["plan"] == "Focused Skill Burst" else 2))
+                        st.progress(p["xp"] / 100)
+                        st.caption(f"XP Status: {p['xp']}/100 | Hidden Potential Ceiling: {p['dyn_pot']}")
 
     # --- TAB 3: STANDINGS ---
     with tab_table:
@@ -577,7 +596,7 @@ elif st.session_state.game_stage == "dashboard":
             st.markdown("### 🟣 Purple Cap Leaderboard")
             for idx, (name, wck) in enumerate(sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]): st.write(f"**{idx+1}. {name}** — {wck} wickets")
 
-    # --- TAB 5: OFFICE CONSOLE ---
+    # --- TAB 5: OFFICE CONSOLE & DYNAMIC PROGRESSION SYSTEMS ---
     with tab_career:
         if user_team:
             opp_team = next(t for t in st.session_state.teams if not t["is_human"])
@@ -587,63 +606,96 @@ elif st.session_state.game_stage == "dashboard":
             with col_met3: st.metric("Budget Remaining", f"₹{user_team['purse']/100:.2f} CR")
             st.divider()
             
-            col_sim1, col_sim2 = st.columns(2)
-            with col_sim1:
-                if st.button("🎮 Enter Live Ball-by-Ball Match Arena", type="primary", use_container_width=True):
-                    st.session_state.live_match_state = {
-                        "user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "bat_team": user_team["team_name"], "bowl_team": opp_team["team_name"],
-                        "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], "bat_roster_current": user_team["playing_11"], "bowl_roster_current": opp_team["playing_11"],
-                        "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0, "innings_1_bat_final": [], "innings_1_bowl_final": [], "bat_card_raw": {}, "bowl_card_raw": {}
-                    }
-                    st.rerun()
-            with col_sim2:
-                if st.button("⚡ Fast Skip Match via Auto Simulation Loops", use_container_width=True):
-                    boost_role = st.session_state.current_venue["boost_role"]
-                    boost_amt = st.session_state.current_venue["boost_amount"]
-                    random.shuffle(st.session_state.teams)
-                    for i in range(0, len(st.session_state.teams) - 1, 2):
-                        t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-                        t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
-                        t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
-                        p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
-                        t1_runs, t2_runs = random.randint(140, 220), random.randint(130, 210)
-                        t2_wickets = random.randint(2, 10)
-                        
-                        if p1 > p2:
-                            t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
-                            headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
-                        else:
-                            t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
-                            headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
+            # END OF SEASON ENGINE OVERLAY TRIPPED ONCE TERMINAL REACHES THE DAY 14 HARD CEILING
+            if st.session_state.match_day > 14:
+                st.warning("🚨 SEASON HAS CONCLUDED! The board is processing structural contracts and age progression metrics.")
+                if st.button("🔄 Execute End-of-Season Recalculation Loop", type="primary", use_container_width=True):
+                    st.write("### 📊 Annual Operations Re-Indexing Report:")
+                    for t in st.session_state.teams:
+                        for p in t["squad"]:
+                            old_ovr = p["rating"]
+                            # Young players with high team morale gain breakout potential boosts
+                            if p["age"] < 25 and t["morale"] > 80:
+                                p["dyn_pot"] = min(99, p["dyn_pot"] + random.randint(1, 3))
+                                p["rating"] = min(p["dyn_pot"], p["rating"] + 2)
+                                st.write(f"• 📈 **Breakout Superstar:** {p['name']} ({t['team_name']}) grew to `{p['rating']}` OVR. Ceiling expanded to `{p['dyn_pot']}`.")
+                            # Biological Age Regression Loop triggered smoothly at Age 32+
+                            elif p["age"] >= 32:
+                                drop = 2 if p in t["playing_11"] else 3  # Bench warming veterans decay faster
+                                p["rating"] = max(65, p["rating"] - drop)
+                                p["dyn_pot"] = p["rating"]
+                                st.write(f"• 📉 **Biological Age Regression:** Veteran {p['name']} ({t['team_name']}) drops from `{old_ovr}` to `{p['rating']}` OVR due to physical attrition factors.")
                             
-                        inn1_bat_list, inn1_bowl_list = [], []
-                        for idx, p in enumerate(t1["playing_11"]):
-                            r = random.randint(35, 85) if idx < 3 else random.randint(0, 35)
-                            b = int(r / 1.3) + 1
-                            inn1_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 2, "6s": 1, "S/R": round((r/b)*100, 2)})
-                            st.session_state.stats_runs[p["name"]] = st.session_state.stats_runs.get(p["name"], 0) + r
-                        for idx, p in enumerate(t2["playing_11"]):
-                            is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
-                            w = random.randint(1, 3) if is_bowl else 0
-                            rc = random.randint(20, 40) if is_bowl else 0
-                            inn1_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
-                            if w > 0: st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w
+                            p["age"] += 1
+                    st.session_state.match_day = 1
+                    st.rerun()
+            else:
+                col_sim1, col_sim2 = st.columns(2)
+                with col_sim1:
+                    if st.button("🎮 Enter Live Ball-by-Ball Match Arena", type="primary", use_container_width=True):
+                        st.session_state.live_match_state = {
+                            "user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "bat_team": user_team["team_name"], "bowl_team": opp_team["team_name"],
+                            "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], "bat_roster_current": user_team["playing_11"], "bowl_roster_current": opp_team["playing_11"],
+                            "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0, "innings_1_bat_final": [], "innings_1_bowl_final": [], "bat_card_raw": {}, "bowl_card_raw": {}
+                        }
+                        st.rerun()
+                with col_sim2:
+                    if st.button("⚡ Fast Skip Match via Auto Simulation Loops", use_container_width=True):
+                        boost_role = st.session_state.current_venue["boost_role"]
+                        boost_amt = st.session_state.current_venue["boost_amount"]
+                        random.shuffle(st.session_state.teams)
+                        
+                        for i in range(0, len(st.session_state.teams) - 1, 2):
+                            t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
+                            t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
+                            t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
+                            p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
+                            t1_runs, t2_runs = random.randint(140, 220), random.randint(130, 210)
+                            t2_wickets = random.randint(2, 10)
+                            
+                            if p1 > p2:
+                                t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
+                                headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
+                            else:
+                                t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
+                                headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
+                                
+                            # FAST SIMULATION TRAINING ITERATION PASS
+                            for t_curr in [t1, t2]:
+                                for p in t_curr["squad"]:
+                                    p["xp"] += random.randint(15, 45)
+                                    if p["xp"] >= 100:
+                                        if p["rating"] < p["dyn_pot"]: p["rating"] += 1
+                                        p["xp"] = 0
+                                
+                            inn1_bat_list, inn1_bowl_list = [], []
+                            for idx, p in enumerate(t1["playing_11"]):
+                                r = random.randint(35, 85) if idx < 3 else random.randint(0, 35)
+                                b = int(r / 1.3) + 1
+                                inn1_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 2, "6s": 1, "S/R": round((r/b)*100, 2)})
+                                st.session_state.stats_runs[p["name"]] = st.session_state.stats_runs.get(p["name"], 0) + r
+                            for idx, p in enumerate(t2["playing_11"]):
+                                is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
+                                w = random.randint(1, 3) if is_bowl else 0
+                                rc = random.randint(20, 40) if is_bowl else 0
+                                inn1_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
+                                if w > 0: st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w
 
-                        inn2_bat_list, inn2_bowl_list = [], []
-                        inn2_ytb = [p["name"] for p in t2["playing_11"][t2_wickets:]] if t2_wickets < 11 else []
-                        for idx, p in enumerate(t2["playing_11"]):
-                            if idx < t2_wickets:
-                                r = random.randint(10, 40); b = int(r / 1.2) + 1
-                                inn2_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 1, "6s": 1, "S/R": round((r/b)*100, 2)})
-                            else: inn2_bat_list.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
-                        for idx, p in enumerate(t1["playing_11"]):
-                            is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
-                            w = random.randint(1, 2) if is_bowl else 0; rc = random.randint(15, 35) if is_bowl else 0
-                            inn2_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
+                            inn2_bat_list, inn2_bowl_list = [], []
+                            inn2_ytb = [p["name"] for p in t2["playing_11"][t2_wickets:]] if t2_wickets < 11 else []
+                            for idx, p in enumerate(t2["playing_11"]):
+                                if idx < t2_wickets:
+                                    r = random.randint(10, 40); b = int(r / 1.2) + 1
+                                    inn2_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 1, "6s": 1, "S/R": round((r/b)*100, 2)})
+                                else: inn2_bat_list.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
+                            for idx, p in enumerate(t1["playing_11"]):
+                                is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
+                                w = random.randint(1, 2) if is_bowl else 0; rc = random.randint(15, 35) if is_bowl else 0
+                                inn2_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
 
-                        st.session_state.match_history.append({
-                            "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline, "detailed": True,
-                            "inn1_bat_team": t1["team_name"], "inn1_bowl_team": t2["team_name"], "inn2_bat_team": t2["team_name"], "inn2_bowl_team": t1["team_name"],
-                            "inn1_bat": inn1_bat_list, "inn1_bowl": inn1_bowl_list, "inn1_ytb": [], "inn2_bat": inn2_bat_list, "inn2_bowl": inn2_bowl_list, "inn2_ytb": inn2_ytb
-                        })
-                    st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
+                            st.session_state.match_history.append({
+                                "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline, "detailed": True,
+                                "inn1_bat_team": t1["team_name"], "inn1_bowl_team": t2["team_name"], "inn2_bat_team": t2["team_name"], "inn2_bowl_team": t1["team_name"],
+                                "inn1_bat": inn1_bat_list, "inn1_bowl": inn1_bowl_list, "inn1_ytb": [], "inn2_bat": inn2_bat_list, "inn2_bowl": inn2_bowl_list, "inn2_ytb": inn2_ytb
+                            })
+                        st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
