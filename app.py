@@ -255,7 +255,13 @@ if "news_flash" not in st.session_state:
     st.session_state.news_flash = "Welcome to the updated IPL Console! All 200 real-world stars successfully initialized."
 
 user_team = st.session_state.teams[st.session_state.user_team_key]
+# Safeguard: If the saved user_team_key is missing from the teams dictionary,
+# reset it back to a known valid team to prevent a KeyError.
+if st.session_state.get("user_team_key") not in st.session_state.teams:
+    st.session_state.user_team_key = list(st.session_state.teams.keys())[0]
 
+# This line will now run safely without throwing an error
+user_team = st.session_state.teams[st.session_state.user_team_key]
 # ==========================================
 # 2. MATCH ENGINE CORE SIMULATOR
 # ==========================================
