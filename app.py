@@ -256,10 +256,11 @@ if "player_pool" not in st.session_state:
     random.shuffle(st.session_state.player_pool)
 
 # --- SYSTEM INJECTIONS ---
-for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "match_history", "stats_runs", "stats_wickets", "live_match_state", "current_tab", "selected_headline_idx"]:
+for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "match_history", "stats_runs", "stats_wickets", "live_match_state", "current_tab", "selected_headline_idx", "active_match_engine"]:
     if key not in st.session_state: 
         if key == "current_tab": st.session_state[key] = "Home"
         elif key == "selected_headline_idx": st.session_state[key] = 0
+        elif key == "active_match_engine": st.session_state[key] = {"state": "idle", "toss_winner": None, "toss_decision": None}
         else: st.session_state[key] = [] if "history" in key or "teams" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
 
 if "match_day" not in st.session_state: st.session_state.match_day = 1
@@ -272,6 +273,8 @@ if "teams" in st.session_state and isinstance(st.session_state.teams, list):
             team["manager"] = "Franchise Owner"
         if "nrr" not in team:
             team["nrr"] = 0.00
+        if "wins" not in team: team["wins"] = 0
+        if "losses" not in team: team["losses"] = 0
 
 # --- ULTRALUX DARK DESIGN SYSTEM ENGINE ---
 st.markdown("""
@@ -280,10 +283,9 @@ st.markdown("""
     [data-testid="stSidebar"] { background-color: #11141b !important; border-right: 1px solid #1c202a !important; min-width: 260px !important; }
     .top-badge-date { background-color: #16221f !important; border: 1px solid #1b4d3e !important; border-radius: 8px; padding: 8px 16px; color: #52d69b !important; font-weight: 700; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
     
-    /* Sim & Play Match Control Header Actions Layout Checkpoints */
-    .sim-match-btn button { background: #1f242e !important; color: #ffffff !important; border: 1px solid #2d3748 !important; font-weight: 700 !important; border-radius: 8px !important; padding: 10px 20px !important; transition: all 0.2s; }
+    .sim-match-btn button { background: #1f242e !important; color: #ffffff !important; border: 1px solid #2d3748 !important; font-weight: 700 !important; border-radius: 8px !important; padding: 10px 20px !important; transition: all 0.2s; width:100%; }
     .sim-match-btn button:hover { background: #2d3748 !important; }
-    .play-match-btn button { background: #10b981 !important; color: #000000 !important; border: none !important; font-weight: 800 !important; border-radius: 8px !important; padding: 10px 24px !important; transition: all 0.2s; }
+    .play-match-btn button { background: #10b981 !important; color: #000000 !important; border: none !important; font-weight: 800 !important; border-radius: 8px !important; padding: 10px 24px !important; transition: all 0.2s; width:100%; }
     .play-match-btn button:hover { background: #34d399 !important; box-shadow: 0 0 15px rgba(16,185,129,0.3); }
     
     .dashboard-panel-card { background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 20px; height: 100%; min-height: 140px; position: relative; }
@@ -299,11 +301,14 @@ st.markdown("""
     .stat-hero-ovr { font-size: 36px; font-weight: 800; color: #ffffff; line-height: 1; }
     .stat-hero-delta-red { color: #f87171 !important; font-weight: 700; font-size: 16px; }
     .stat-hero-delta-green { color: #34d399 !important; font-weight: 700; font-size: 16px; }
-    h1, h2, h3, h4, h5, p, span, div { font-family: 'Inter', sans-serif !important; }
+    
+    /* Scorecard Aesthetics Engine */
+    .cricket-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .cricket-table th { background-color: #1c202a; color: #8892b0; padding: 10px; text-align: left; font-size: 12px; text-transform: uppercase; }
+    .cricket-table td { padding: 12px 10px; border-bottom: 1px solid #1c202a; color: #ffffff; font-size: 14px; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HELPERS FOR SYSTEM ARCHITECTURE ---
 def get_form_offset(form_string):
     mapping = {"Slumping": -4, "Steady": 0, "Good": 2, "Red-Hot": 5}
     return mapping.get(form_string, 0)
@@ -313,42 +318,67 @@ def trigger_form_roulette():
         for p in t["squad"]:
             p["form"] = random.choice(["Slumping", "Steady", "Good", "Red-Hot"])
 
-def simulate_matchday_loop():
-    st.session_state.current_tab = "Home"
-    boost_role = st.session_state.current_venue["boost_role"]
-    boost_amt = st.session_state.current_venue["boost_amount"]
-    random.shuffle(st.session_state.teams)
+# --- CORE DETAILED ENGINE CRICKET MATRIX SIMULATOR ---
+def generate_detailed_scorecard(batting_team, bowling_team):
+    batters = batting_team["playing_11"] if batting_team["playing_11"] else batting_team["squad"][:11]
+    bowlers = [p for p in (bowling_team["playing_11"] if bowling_team["playing_11"] else bowling_team["squad"][:11]) if p["role"] in ["Bowler", "All-Rounder"]]
+    if not bowlers: bowlers = (bowling_team["playing_11"] if bowling_team["playing_11"] else bowling_team["squad"][:11])[:4]
     
-    for i in range(0, len(st.session_state.teams) - 1, 2):
-        t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-        t1_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t1["playing_11"]])
-        t2_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t2["playing_11"]])
-        
-        p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
-        t1_runs, t2_runs = random.randint(145, 215), random.randint(140, 210)
-        
-        if p1 > p2:
-            t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
-            t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
-            t1["nrr"] = t1.get("nrr", 0.0) + 0.45
-            t2["nrr"] = t2.get("nrr", 0.0) - 0.45
-            headline = f"{t1['team_name']} cruise to victory over {t2['team_name']}"
-            body_text = f"The chase was completed successfully by the batting order assets. Performance multipliers applied securely."
-        else:
-            t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
-            t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
-            t2["nrr"] = t2.get("nrr", 0.0) + 0.52
-            t1["nrr"] = t1.get("nrr", 0.0) - 0.52
-            headline = f"{t2['team_name']} record emphatic win over {t1['team_name']}"
-            body_text = f"Rival line-up elements structured clean defenses and constrained the runs effectively on this surface tier."
-        
-        st.session_state.match_history.append({
-            "type": "MATCH REPORT", "date": f"Mar {22 + st.session_state.match_day}, 2026", "headline": headline,
-            "body": body_text, "detailed": False, "t1": t1["team_name"], "t2": t2["team_name"]
-        })
+    batting_performance = []
+    total_runs = 0
+    total_wickets = 0
+    balls_tracked = 0
     
-    st.session_state.match_day += 1
-    trigger_form_roulette()
+    for idx, b in enumerate(batters):
+        if total_wickets >= 10 or balls_tracked >= 120:
+            batting_performance.append({"name": b["name"], "status": "DNB", "runs": 0, "balls": 0, "fours": 0, "sixes": 0, "sr": 0.0})
+            continue
+            
+        # Weighted metric generation base on rating configurations
+        ability = b["rating"] + get_form_offset(b["form"])
+        balls_faced = random.randint(5, 30)
+        if idx < 4: balls_faced = random.randint(15, 45)
+        
+        runs_scored = 0
+        fours = 0
+        sixes = 0
+        for _ in range(balls_faced):
+            ball_roll = random.random()
+            if ball_roll < (0.04 + (100 - ability)*0.001):
+                break # Wicket out falling pattern
+            elif ball_roll < 0.45: runs_scored += 1
+            elif ball_roll < 0.60: runs_scored += 2
+            elif ball_roll < 0.75: 
+                runs_scored += 4; fours += 1
+            elif ball_roll < 0.85: 
+                runs_scored += 6; sixes += 1
+        
+        total_runs += runs_scored
+        balls_tracked += balls_faced
+        sr = round((runs_scored / max(1, balls_faced)) * 100, 1)
+        
+        st.session_state.stats_runs[b["name"]] = st.session_state.stats_runs.get(b["name"], 0) + runs_scored
+        batting_performance.append({"name": b["name"], "status": "Out" if random.random() > 0.3 else "Not Out", "runs": runs_scored, "balls": balls_faced, "fours": fours, "sixes": sixes, "sr": sr})
+        if batting_performance[-1]["status"] == "Out": total_wickets += 1
+
+    # Extra runs overlay
+    total_runs += random.randint(4, 15)
+    
+    bowling_performance = []
+    wickets_remaining = total_wickets
+    for idx, bwl in enumerate(bowlers):
+        overs = 4
+        runs_conceded = random.randint(18, 45) - int((bwl["rating"] - 80) * 0.3)
+        runs_conceded = max(10, runs_conceded)
+        wkt = 0
+        if wickets_remaining > 0:
+            wkt = random.randint(0, min(3, wickets_remaining))
+            wickets_remaining -= wkt
+            
+        st.session_state.stats_wickets[bwl["name"]] = st.session_state.stats_wickets.get(bwl["name"], 0) + wkt
+        bowling_performance.append({"name": bwl["name"], "overs": overs, "runs": runs_conceded, "wickets": wkt, "econ": round(runs_conceded/overs, 2)})
+
+    return {"runs": total_runs, "wickets": min(10, total_wickets), "overs": round(min(120, balls_tracked)/6, 1), "batting": batting_performance, "bowling": bowling_performance}
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -472,7 +502,6 @@ elif st.session_state.game_stage == "auction":
 elif st.session_state.game_stage == "dashboard":
     
     human_squads = [t for t in st.session_state.teams if t["is_human"]]
-    
     if "selected_human_idx" not in st.session_state:
         st.session_state.selected_human_idx = 0
         
@@ -498,21 +527,18 @@ elif st.session_state.game_stage == "dashboard":
             
         tabs_list = ["Home", "Squad", "Schedule", "Table", "Stats"]
         for tab in tabs_list:
-            is_active_class = "active" if st.session_state.current_tab == tab else ""
-            
-            # Use direct sidebar native components to trigger tab switches instead of plain text leaks
             if st.sidebar.button(tab, key=f"nav_btn_{tab}", use_container_width=True):
                 st.session_state.current_tab = tab
+                st.session_state.active_match_engine = {"state": "idle", "toss_winner": None, "toss_decision": None}
                 st.rerun()
                 
         st.markdown("<br/><br/><br/>", unsafe_allow_html=True)
-        st.markdown("<div style='padding-left:16px; font-weight:700; color:#718096; font-size:14px;'>💛 Support</div>", unsafe_allow_html=True)
         if st.sidebar.button("🚪 Reset Console Session", key="exit_game_system"):
             st.session_state.clear()
             st.rerun()
 
     # =========================================================
-    # TOP HEADER OPERATIONS BAR (PHOTO ONE DUAL BUTTONS)
+    # TOP HEADER OPERATIONS BAR
     # =========================================================
     top_col_left, top_col_mid, top_col_right = st.columns([3, 1, 1])
     with top_col_left:
@@ -525,30 +551,155 @@ elif st.session_state.game_stage == "dashboard":
     with top_col_mid:
         st.markdown("<div class='sim-match-btn'>", unsafe_allow_html=True)
         if st.button("⏩ Sim Match", key="global_sim_match_action"):
-            simulate_matchday_loop()
+            # Instant backend execution bypass
+            bot_teams_pool = [t for t in st.session_state.teams if t["team_name"] != user_team["team_name"]]
+            opponent = bot_teams_pool[0]
+            sc1 = generate_detailed_scorecard(user_team, opponent)
+            sc2 = generate_detailed_scorecard(opponent, user_team)
+            
+            if sc1["runs"] > sc2["runs"]:
+                user_team["points"] += 2; user_team["wins"] += 1
+                opponent["losses"] += 1
+                headline = f"{user_team['team_name']} win by custom sim loop criteria"
+            else:
+                opponent["points"] += 2; opponent["wins"] += 1
+                user_team["losses"] += 1
+                headline = f"{opponent['team_name']} out-runs corporate lineup layout"
+                
+            st.session_state.match_history.append({
+                "type": "MATCH REPORT", "date": f"Mar {22 + st.session_state.match_day}, 2026", "headline": headline,
+                "body": f"Simulated instantly. Scorecard logs compiled.", "scorecard": {"sc1": sc1, "sc2": sc2, "t1": user_team["team_name"], "t2": opponent["team_name"]}
+            })
+            st.session_state.match_day += 1
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
     with top_col_right:
         st.markdown("<div class='play-match-btn'>", unsafe_allow_html=True)
         if st.button("▷ Play Match", key="global_play_match_action"):
-            simulate_matchday_loop()
+            # Set the engine state machine active!
+            st.session_state.current_tab = "Match Engine"
+            st.session_state.active_match_engine = {
+                "state": "toss_phase",
+                "toss_winner": None,
+                "toss_decision": None
+            }
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<br/>", unsafe_allow_html=True)
 
     # =========================================================
-    # TAB ROUTING 1: HOME VIEW (CLEAN PACKED COMPACT CARDS)
+    # TAB ROUTING 1: LIVE INTERACTIVE MATCH ENGINE BLOCK
+    # =========================================================
+    if st.session_state.current_tab == "Match Engine":
+        st.header("🏏 Match Arena Environment Dashboard")
+        engine = st.session_state.active_match_engine
+        bot_teams_pool = [t for t in st.session_state.teams if t["team_name"] != user_team["team_name"]]
+        opp_team = bot_teams_pool[0]
+        
+        if engine["state"] == "toss_phase":
+            st.subheader("🪙 The Toss Choice Management Selection")
+            t_col1, t_col2 = st.columns(2)
+            with t_col1:
+                call_selection = st.radio("Call the coin flip side under corporate review:", ["Heads", "Tails"])
+                if st.button("🪙 Flip Coin", use_container_width=True):
+                    flip_result = random.choice(["Heads", "Tails"])
+                    if call_selection == flip_result:
+                        engine["toss_winner"] = user_team["team_name"]
+                        engine["state"] = "toss_decision_human"
+                    else:
+                        engine["toss_winner"] = opp_team["team_name"]
+                        engine["toss_decision"] = random.choice(["Bat First", "Bowl First"])
+                        engine["state"] = "toss_complete"
+                    st.rerun()
+                    
+        elif engine["state"] == "toss_decision_human":
+            st.success(f"🎉 You won the toss choice overlay configuration!")
+            decision = st.radio("Select tactical setup direction:", ["Bat First", "Bowl First"])
+            if st.button("Confirm Strategy Line", use_container_width=True):
+                engine["toss_decision"] = decision
+                engine["state"] = "toss_complete"
+                st.rerun()
+                
+        elif engine["state"] == "toss_complete":
+            st.info(f"🪙 Toss Winner: **{engine['toss_winner']}** | Choice Vector: **{engine['toss_decision']}**")
+            
+            if st.button("⚡ Execute Live Complete Match Simulation Runs", type="primary", use_container_width=True):
+                # Run the score architecture generator engines
+                if engine["toss_decision"] == "Bat First" and engine["toss_winner"] == user_team["team_name"]:
+                    sc1 = generate_detailed_scorecard(user_team, opp_team)
+                    sc2 = generate_detailed_scorecard(opp_team, user_team)
+                elif engine["toss_decision"] == "Bowl First" and engine["toss_winner"] == user_team["team_name"]:
+                    sc1 = generate_detailed_scorecard(opp_team, user_team)
+                    sc2 = generate_detailed_scorecard(user_team, opp_team)
+                else:
+                    sc1 = generate_detailed_scorecard(opp_team, user_team)
+                    sc2 = generate_detailed_scorecard(user_team, opp_team)
+                
+                engine["sc1"] = sc1
+                engine["sc2"] = sc2
+                engine["state"] = "match_finished"
+                st.rerun()
+                
+        elif engine["state"] == "match_finished":
+            sc1 = engine["sc1"]
+            sc2 = engine["sc2"]
+            
+            st.success("🏁 Match Concluded successfully!")
+            
+            # Write points tables logic metrics updates safely
+            if st.button("💾 Finalize Results & Return to Newsroom Hub", use_container_width=True):
+                if sc1["runs"] > sc2["runs"]:
+                    # logic assignments
+                    user_team["points"] += 2; user_team["wins"] += 1; opp_team["losses"] += 1
+                    hl = f"{user_team['team_name']} down {opp_team['team_name']} in interactive spectacular setup"
+                else:
+                    opp_team["points"] += 2; opp_team["wins"] += 1; user_team["losses"] += 1
+                    hl = f"{opp_team['team_name']} conquer away arena vs {user_team['team_name']}"
+                    
+                st.session_state.match_history.append({
+                    "type": "MATCH REPORT", "date": f"Mar {22 + st.session_state.match_day}, 2026", "headline": hl,
+                    "body": f"High energy performance tracker records an ultimate match setup.", "scorecard": {"sc1": sc1, "sc2": sc2, "t1": user_team["team_name"], "t2": opp_team["team_name"]}
+                })
+                st.session_state.match_day += 1
+                st.session_state.current_tab = "Home"
+                st.rerun()
+                
+            # --- DETAILED PREMIUM DIGITAL SCORECARD RENDER VIEW ---
+            st.markdown("### 📊 Interactive Live Scorecard Viewport")
+            t1, t2 = st.tabs([f"Innings 1 Overview", f"Innings 2 Overview"])
+            
+            with t1:
+                st.metric(label="Innings 1 Total Score", value=f"{sc1['runs']}/{sc1['wickets']}", delta=f"{sc1['overs']} Overs")
+                st.markdown("#### Batting Roster Analysis")
+                df_bat1 = pd.DataFrame(sc1["batting"])
+                st.dataframe(df_bat1, use_container_width=True, hide_index=True)
+                
+                st.markdown("#### Bowling Economy Spells")
+                df_bwl1 = pd.DataFrame(sc1["bowling"])
+                st.dataframe(df_bwl1, use_container_width=True, hide_index=True)
+
+            with t2:
+                st.metric(label="Innings 2 Total Score", value=f"{sc2['runs']}/{sc2['wickets']}", delta=f"{sc2['overs']} Overs")
+                st.markdown("#### Batting Roster Analysis")
+                df_bat2 = pd.DataFrame(sc2["batting"])
+                st.dataframe(df_bat2, use_container_width=True, hide_index=True)
+                
+                st.markdown("#### Bowling Economy Spells")
+                df_bwl2 = pd.DataFrame(sc2["bowling"])
+                st.dataframe(df_bwl2, use_container_width=True, hide_index=True)
+
+    # =========================================================
+    # TAB ROUTING 1: HOME VIEW
     # =========================================================
     if st.session_state.current_tab == "Home":
         met_col1, met_col2, met_col3 = st.columns(3)
         
         with met_col1:
-            bot_teams_pool = [t for t in st.session_state.teams if not t["is_human"]]
+            bot_teams_pool = [t for t in st.session_state.teams if t["team_name"] != user_team["team_name"]]
             next_opp = bot_teams_pool[0]["team_name"] if bot_teams_pool else "Rival Franchise"
             opp_short = next_opp[:3].upper()
             
-            # Content is completely packed into the card, no overflow leakage
             st.markdown(f"""
                 <div class='dashboard-panel-card'>
                     <div class='panel-header-text'>🔮 Next Match</div>
@@ -564,8 +715,8 @@ elif st.session_state.game_stage == "dashboard":
             
         with met_col2:
             sorted_teams = sorted(st.session_state.teams, key=lambda x: x["points"], reverse=True)
-            my_pos = sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 3
-            nrr_value = user_team.get("nrr", 1.16) if user_team else 1.16
+            my_pos = sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 1
+            nrr_value = user_team.get("nrr", 0.00) if user_team else 0.00
             nrr_class = "stat-hero-delta-green" if nrr_value >= 0 else "stat-hero-delta-red"
             
             st.markdown(f"""
@@ -574,7 +725,7 @@ elif st.session_state.game_stage == "dashboard":
                     <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;'>
                         <div>
                             <div class='stat-hero-ovr'>#{my_pos}</div>
-                            <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points'] if user_team else 2} pts accumulated</div>
+                            <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points'] if user_team else 0} pts accumulated</div>
                         </div>
                         <div style='text-align: right;'>
                             <div class='{nrr_class}'>{nrr_value:+.2f}</div>
@@ -585,7 +736,7 @@ elif st.session_state.game_stage == "dashboard":
             """, unsafe_allow_html=True)
             
         with met_col3:
-            wins_count = user_team["wins"] if user_team else 1
+            wins_count = user_team["wins"] if user_team else 0
             loss_count = user_team["losses"] if user_team else 0
             
             st.markdown(f"""
@@ -628,7 +779,7 @@ elif st.session_state.game_stage == "dashboard":
                         </div>
                     """, unsafe_allow_html=True)
                     
-                    if st.button("Read Article", key=f"read_wire_{idx}", use_container_width=True):
+                    if st.button("Read Article & View Scorecard", key=f"read_wire_{idx}", use_container_width=True):
                         st.session_state.selected_headline_idx = idx
                         st.rerun()
             st.markdown("</div>", unsafe_allow_html=True)
@@ -638,17 +789,21 @@ elif st.session_state.game_stage == "dashboard":
             if active_idx < len(st.session_state.match_history):
                 article = st.session_state.match_history[active_idx]
                 st.markdown(f"""
-                    <div style='background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 30px; min-height: 320px;'>
+                    <div style='background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 30px; min-height: 220px;'>
                         <div style='font-size: 13px; font-weight: 700; color: #8892b0; text-transform: uppercase;'>{article.get('type', 'NEWS WIRE')} • {article['date']}</div>
                         <h2 style='color: #ffffff; font-weight: 800; margin-top: 10px; font-size: 28px;'>{article['headline']}</h2>
                         <p style='color: #a0aec0; font-size: 16px; margin-top: 20px; line-height: 1.6;'>{article['body']}</p>
-                        <p style='color: #718096; font-size: 14px; margin-top: 15px;'>Roster evaluations, dynamic multipliers, and training pipelines are running silently under management alignment plans.</p>
                     </div>
                 """, unsafe_allow_html=True)
                 
-                if st.button("📊 View Complete League Standings Grid", use_container_width=True):
-                    st.session_state.current_tab = "Table"
-                    st.rerun()
+                if "scorecard" in article:
+                    sc = article["scorecard"]
+                    st.markdown("#### 📊 Match Scorecard Summary")
+                    sc_col1, sc_col2 = st.columns(2)
+                    with sc_col1:
+                        st.metric(label=sc["t1"], value=f"{sc['sc1']['runs']}/{sc['sc1']['wickets']}", delta=f"{sc['sc1']['overs']} Ov")
+                    with sc_col2:
+                        st.metric(label=sc["t2"], value=f"{sc['sc2']['runs']}/{sc['sc2']['wickets']}", delta=f"{sc['sc2']['overs']} Ov")
 
     # =========================================================
     # TAB ROUTING 2: ROSTER HUD VIEW
@@ -673,10 +828,9 @@ elif st.session_state.game_stage == "dashboard":
                     is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
                     form_color = "red" if p["form"] == "Slumping" else ("orange" if p["form"] == "Steady" else "green")
                     with st.expander(f"{p['name']} (OVR {p['rating']} | Age {p['age']}) — {is_starter}"):
-                        st.markdown(f"**Current Player Condition:** :{form_color}[{p['form']}] (OVR Impact: {get_form_offset(p['form']):+})")
+                        st.markdown(f"**Current Player Condition:** :{form_color}[{p['form']}]")
                         p["plan"] = st.selectbox("Strategic Target Plan:", ["Balanced Alignment", "Focused Skill Burst", "Tactical IQ Training"], key=f"plan_sel_{p['name']}", index=0 if p["plan"] == "Balanced Alignment" else (1 if p["plan"] == "Focused Skill Burst" else 2))
                         st.progress(p["xp"] / 100)
-                        st.caption(f"XP Status: {p['xp']}/100 | Hidden Potential Ceiling: {p['dyn_pot']}")
 
     # =========================================================
     # TAB ROUTING 3: SCHEDULE METRIC DATA TABLES
@@ -690,7 +844,7 @@ elif st.session_state.game_stage == "dashboard":
         if schedule_data:
             st.dataframe(pd.DataFrame(schedule_data), use_container_width=True, hide_index=True)
         else:
-            st.info("No corporate fixtures auto-simulated yet. Click 'Sim Match' to run iterations.")
+            st.info("No fixtures simulated yet. Use 'Sim Match' or 'Play Match' actions above.")
 
     # =========================================================
     # TAB ROUTING 4: STANDINGS BOARD VIEW
@@ -720,13 +874,14 @@ elif st.session_state.game_stage == "dashboard":
             st.markdown("### 🟠 Orange Cap Leaderboard (Top Batsmen)")
             if st.session_state.stats_runs:
                 for idx, (name, runs) in enumerate(sorted(st.session_state.stats_runs.items(), key=lambda x: x[1], reverse=True)[:10]): 
-                    st.write(f"**{idx+1}. {name}** — {runs} runs accumulated")
+                    st.write(f"**{idx+1}. {name}** — {runs} runs")
             else:
                 st.caption("No batsman data compiled yet.")
         with col_p:
             st.markdown("### 🟣 Purple Cap Leaderboard (Top Bowlers)")
             if st.session_state.stats_wickets:
                 for idx, (name, wck) in enumerate(sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]): 
-                    st.write(f"**{idx+1}. {name}** — {wck} wickets claimed")
+                    st.write(f"**{idx+1}. {name}** — {wck} wickets")
             else:
                 st.caption("No bowler data compiled yet.")
+                
