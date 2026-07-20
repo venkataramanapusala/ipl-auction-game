@@ -279,12 +279,17 @@ st.markdown("""
     .stApp { background-color: #0b0e14 !important; }
     [data-testid="stSidebar"] { background-color: #11141b !important; border-right: 1px solid #1c202a !important; min-width: 260px !important; }
     .top-badge-date { background-color: #16221f !important; border: 1px solid #1b4d3e !important; border-radius: 8px; padding: 8px 16px; color: #52d69b !important; font-weight: 700; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
-    .next-day-btn decline button, .next-day-btn button { background: #10b981 !important; color: #000000 !important; font-weight: 800 !important; border-radius: 8px !important; border: none !important; padding: 10px 24px !important; font-size: 15px !important; width: 100%; transition: all 0.2s ease; }
-    .next-day-btn button:hover { background: #34d399 !important; box-shadow: 0 0 15px rgba(16,185,129,0.4); transform: translateY(-1px); }
+    
+    /* Sim & Play Match Control Header Actions Layout Checkpoints */
+    .sim-match-btn button { background: #1f242e !important; color: #ffffff !important; border: 1px solid #2d3748 !important; font-weight: 700 !important; border-radius: 8px !important; padding: 10px 20px !important; transition: all 0.2s; }
+    .sim-match-btn button:hover { background: #2d3748 !important; }
+    .play-match-btn button { background: #10b981 !important; color: #000000 !important; border: none !important; font-weight: 800 !important; border-radius: 8px !important; padding: 10px 24px !important; transition: all 0.2s; }
+    .play-match-btn button:hover { background: #34d399 !important; box-shadow: 0 0 15px rgba(16,185,129,0.3); }
+    
     .dashboard-panel-card { background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 20px; height: 100%; min-height: 140px; position: relative; }
     .panel-header-text { color: #8892b0 !important; font-size: 13px !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
     .logo-square-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #ffffff; }
-    .opponent-badge-icon { width: 44px; height: 44px; background: #1e3a8a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #ffffff; }
+    .opponent-badge-icon { width: 44px; height: 44px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #ffffff; }
     .sidebar-nav-item { padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; font-weight: 700; font-size: 15px; color: #a0aec0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.15s ease; }
     .sidebar-nav-item:hover { background-color: #1c202a; color: #ffffff; }
     .sidebar-nav-item.active { background-color: #242936; color: #ffffff; border-left: 4px solid #10b981; }
@@ -307,6 +312,43 @@ def trigger_form_roulette():
     for t in st.session_state.teams:
         for p in t["squad"]:
             p["form"] = random.choice(["Slumping", "Steady", "Good", "Red-Hot"])
+
+def simulate_matchday_loop():
+    st.session_state.current_tab = "Home"
+    boost_role = st.session_state.current_venue["boost_role"]
+    boost_amt = st.session_state.current_venue["boost_amount"]
+    random.shuffle(st.session_state.teams)
+    
+    for i in range(0, len(st.session_state.teams) - 1, 2):
+        t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
+        t1_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t1["playing_11"]])
+        t2_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t2["playing_11"]])
+        
+        p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
+        t1_runs, t2_runs = random.randint(145, 215), random.randint(140, 210)
+        
+        if p1 > p2:
+            t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
+            t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
+            t1["nrr"] = t1.get("nrr", 0.0) + 0.45
+            t2["nrr"] = t2.get("nrr", 0.0) - 0.45
+            headline = f"{t1['team_name']} cruise to victory over {t2['team_name']}"
+            body_text = f"The chase was completed successfully by the batting order assets. Performance multipliers applied securely."
+        else:
+            t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
+            t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
+            t2["nrr"] = t2.get("nrr", 0.0) + 0.52
+            t1["nrr"] = t1.get("nrr", 0.0) - 0.52
+            headline = f"{t2['team_name']} record emphatic win over {t1['team_name']}"
+            body_text = f"Rival line-up elements structured clean defenses and constrained the runs effectively on this surface tier."
+        
+        st.session_state.match_history.append({
+            "type": "MATCH REPORT", "date": f"Mar {22 + st.session_state.match_day}, 2026", "headline": headline,
+            "body": body_text, "detailed": False, "t1": t1["team_name"], "t2": t2["team_name"]
+        })
+    
+    st.session_state.match_day += 1
+    trigger_form_roulette()
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -448,7 +490,7 @@ elif st.session_state.game_stage == "dashboard":
                     <div class='logo-square-icon'>{team_short}</div>
                     <div>
                         <div style='font-size: 18px; font-weight: 800; color: #ffffff;'>{user_team['team_name']}</div>
-                        <div style='font-size: 13px; color: #718096; font-weight:600;'>{team.get('manager', 'Franchise Owner')}</div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600;'>{user_team.get('manager', 'Franchise Owner')}</div>
                     </div>
                 </div>
                 <br/>
@@ -457,142 +499,113 @@ elif st.session_state.game_stage == "dashboard":
         tabs_list = ["Home", "Squad", "Schedule", "Table", "Stats"]
         for tab in tabs_list:
             is_active_class = "active" if st.session_state.current_tab == tab else ""
-            st.markdown(f"<div class='sidebar-nav-item {is_active_class}'>{tab}</div>", unsafe_allow_html=True)
             
-            if st.sidebar.button(f"Go to {tab}", key=f"nav_btn_{tab}", use_container_width=True):
+            # Use direct sidebar native components to trigger tab switches instead of plain text leaks
+            if st.sidebar.button(tab, key=f"nav_btn_{tab}", use_container_width=True):
                 st.session_state.current_tab = tab
                 st.rerun()
                 
         st.markdown("<br/><br/><br/>", unsafe_allow_html=True)
-        st.markdown("<div class='sidebar-nav-item'>💛 Support</div>", unsafe_allow_html=True)
+        st.markdown("<div style='padding-left:16px; font-weight:700; color:#718096; font-size:14px;'>💛 Support</div>", unsafe_allow_html=True)
         if st.sidebar.button("🚪 Reset Console Session", key="exit_game_system"):
             st.session_state.clear()
             st.rerun()
 
     # =========================================================
-    # TOP HEADER OPERATIONS BAR
+    # TOP HEADER OPERATIONS BAR (PHOTO ONE DUAL BUTTONS)
     # =========================================================
-    top_col_left, top_col_right = st.columns([4, 1])
+    top_col_left, top_col_mid, top_col_right = st.columns([3, 1, 1])
     with top_col_left:
         st.markdown(f"""
-            <div style='display: flex; align-items: center; gap: 12px;'>
-                <div class='top-badge-date'>📅 Mon, Mar {22 + st.session_state.match_day}</div>
-                <div style='color: #718096; font-size: 14px; font-weight: 600;'>IPL Pro-Manager Simulation Environment Active</div>
+            <div style='display: flex; align-items: center; gap: 12px; margin-top:4px;'>
+                <div class='top-badge-date'>📅 Wed, Mar {22 + st.session_state.match_day}</div>
+                <div style='color: #718096; font-size: 14px; font-weight: 600;'>Simulation Console Active</div>
             </div>
         """, unsafe_allow_html=True)
+    with top_col_mid:
+        st.markdown("<div class='sim-match-btn'>", unsafe_allow_html=True)
+        if st.button("⏩ Sim Match", key="global_sim_match_action"):
+            simulate_matchday_loop()
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
     with top_col_right:
-        st.markdown("<div class='next-day-btn'>", unsafe_allow_html=True)
-        if st.button("Next Day >", key="global_next_day_action_trigger"):
-            st.session_state.current_tab = "Home"
-            boost_role = st.session_state.current_venue["boost_role"]
-            boost_amt = st.session_state.current_venue["boost_amount"]
-            random.shuffle(st.session_state.teams)
-            
-            for i in range(0, len(st.session_state.teams) - 1, 2):
-                t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-                t1_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t1["playing_11"]])
-                t2_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t2["playing_11"]])
-                
-                p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
-                t1_runs, t2_runs = random.randint(145, 215), random.randint(140, 210)
-                
-                if p1 > p2:
-                    t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
-                    t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
-                    t1["nrr"] = t1.get("nrr", 0.0) + 0.45
-                    t2["nrr"] = t2.get("nrr", 0.0) - 0.45
-                    headline = f"{t1['team_name']} chase down {t2['team_name']} smoothly"
-                    body_text = f"The chase was completed successfully by the batting order assets. Performance multipliers applied securely."
-                else:
-                    t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
-                    t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
-                    t2["nrr"] = t2.get("nrr", 0.0) + 0.52
-                    t1["nrr"] = t1.get("nrr", 0.0) - 0.52
-                    headline = f"{t2['team_name']} record emphatic win over {t1['team_name']}"
-                    body_text = f"Rival line-up elements structured clean defenses and constrained the runs effectively on this surface tier."
-                
-                st.session_state.match_history.append({
-                    "type": "MATCH REPORT", "date": f"Mar {22 + st.session_state.match_day}, 2026", "headline": headline,
-                    "body": body_text, "detailed": False, "t1": t1["team_name"], "t2": t2["team_name"]
-                })
-            
-            st.session_state.match_day += 1
-            trigger_form_roulette()
+        st.markdown("<div class='play-match-btn'>", unsafe_allow_html=True)
+        if st.button("▷ Play Match", key="global_play_match_action"):
+            simulate_matchday_loop()
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<br/>", unsafe_allow_html=True)
 
     # =========================================================
-    # TAB ROUTING 1: HOME VIEW
+    # TAB ROUTING 1: HOME VIEW (CLEAN PACKED COMPACT CARDS)
     # =========================================================
     if st.session_state.current_tab == "Home":
         met_col1, met_col2, met_col3 = st.columns(3)
         
         with met_col1:
-            st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='panel-header-text'>🔮 Next Match</div>", unsafe_allow_html=True)
             bot_teams_pool = [t for t in st.session_state.teams if not t["is_human"]]
             next_opp = bot_teams_pool[0]["team_name"] if bot_teams_pool else "Rival Franchise"
             opp_short = next_opp[:3].upper()
             
+            # Content is completely packed into the card, no overflow leakage
             st.markdown(f"""
-                <div style='display: flex; align-items: center; gap: 16px; margin-top: 5px;'>
-                    <div class='opponent-badge-icon'>{opp_short}</div>
-                    <div>
-                        <div style='font-size: 18px; font-weight: 800; color: #ffffff;'>vs {next_opp}</div>
-                        <div style='font-size: 13px; color: #718096; font-weight: 600; margin-top:2px;'>Today • Home • {st.session_state.current_venue['short']}</div>
+                <div class='dashboard-panel-card'>
+                    <div class='panel-header-text'>🔮 Next Match</div>
+                    <div style='display: flex; align-items: center; gap: 16px; margin-top: 12px;'>
+                        <div class='opponent-badge-icon'>{opp_short}</div>
+                        <div>
+                            <div style='font-size: 18px; font-weight: 800; color: #ffffff;'>vs {next_opp}</div>
+                            <div style='font-size: 13px; color: #718096; font-weight: 600; margin-top:2px;'>Today • Away • {st.session_state.current_venue['short']}</div>
+                        </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
             
         with met_col2:
-            st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='panel-header-text'>🏆 League Position</div>", unsafe_allow_html=True)
-            
             sorted_teams = sorted(st.session_state.teams, key=lambda x: x["points"], reverse=True)
-            my_pos = sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 9
-            nrr_value = user_team.get("nrr", 0.0) if user_team else 0.00
+            my_pos = sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 3
+            nrr_value = user_team.get("nrr", 1.16) if user_team else 1.16
             nrr_class = "stat-hero-delta-green" if nrr_value >= 0 else "stat-hero-delta-red"
             
             st.markdown(f"""
-                <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px;'>
-                    <div>
-                        <div class='stat-hero-ovr'>#{my_pos}</div>
-                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points'] if user_team else 0} pts accumulated</div>
-                    </div>
-                    <div style='text-align: right;'>
-                        <div class='{nrr_class}'>{nrr_value:+.2f}</div>
-                        <div style='font-size: 11px; color: #718096; font-weight:700; margin-top:2px;'>NET RUN RATE</div>
+                <div class='dashboard-panel-card'>
+                    <div class='panel-header-text'>🏆 League Position</div>
+                    <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px;'>
+                        <div>
+                            <div class='stat-hero-ovr'>#{my_pos}</div>
+                            <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points'] if user_team else 2} pts accumulated</div>
+                        </div>
+                        <div style='text-align: right;'>
+                            <div class='{nrr_class}'>{nrr_value:+.2f}</div>
+                            <div style='font-size: 11px; color: #718096; font-weight:700; margin-top:2px;'>NET RUN RATE</div>
+                        </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
             
         with met_col3:
-            st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
-            st.markdown("<div class='panel-header-text'>📈 Recent Form</div>", unsafe_allow_html=True)
-            
-            wins_count = user_team["wins"] if user_team else 0
+            wins_count = user_team["wins"] if user_team else 1
             loss_count = user_team["losses"] if user_team else 0
             
             st.markdown(f"""
-                <div style='display: flex; justify-content: space-between; align-items: center; margin-top: 5px;'>
-                    <div>
-                        <div style='display: flex; gap: 6px; align-items: center;'>
-                            <div style='width: 10px; height: 10px; background-color: #10b981; border-radius: 50%;'></div>
-                            <div style='width: 10px; height: 10px; background-color: #10b981; border-radius: 50%;'></div>
-                            <div style='width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%;'></div>
+                <div class='dashboard-panel-card'>
+                    <div class='panel-header-text'>📈 Recent Form</div>
+                    <div style='display: flex; justify-content: space-between; align-items: center; margin-top: 10px;'>
+                        <div>
+                            <div style='display: flex; gap: 6px; align-items: center;'>
+                                <div style='width: 10px; height: 10px; background-color: #10b981; border-radius: 50%;'></div>
+                                <div style='width: 10px; height: 10px; background-color: #718096; border-radius: 50%;'></div>
+                                <div style='width: 10px; height: 10px; background-color: #718096; border-radius: 50%;'></div>
+                            </div>
+                            <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 16px;'>Locker Morale: {user_team['morale'] if user_team else 80}%</div>
                         </div>
-                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 18px;'>Locker Morale: {user_team['morale'] if user_team else 75}%</div>
-                    </div>
-                    <div style='text-align: right;'>
-                        <div style='font-size: 20px; font-weight: 800; color: #10b981;'>{wins_count}W <span style='color:#ef4444;'>- {loss_count}L</span></div>
+                        <div style='text-align: right;'>
+                            <div style='font-size: 20px; font-weight: 800; color: #10b981;'>{wins_count}W <span style='color:#ef4444;'>- {loss_count}L</span></div>
+                        </div>
                     </div>
                 </div>
             """, unsafe_allow_html=True)
-            st.markdown("</div>", unsafe_allow_html=True)
 
         st.markdown("<br/><h4 style='color: #8892b0; font-size:14px; font-weight:700; text-transform:uppercase;'>📰 Operations Wire & Central Newsroom</h4>", unsafe_allow_html=True)
         
@@ -677,7 +690,7 @@ elif st.session_state.game_stage == "dashboard":
         if schedule_data:
             st.dataframe(pd.DataFrame(schedule_data), use_container_width=True, hide_index=True)
         else:
-            st.info("No corporate fixtures auto-simulated yet. Click 'Next Day >' to run iterations.")
+            st.info("No corporate fixtures auto-simulated yet. Click 'Sim Match' to run iterations.")
 
     # =========================================================
     # TAB ROUTING 4: STANDINGS BOARD VIEW
