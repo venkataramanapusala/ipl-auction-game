@@ -217,7 +217,7 @@ if "player_pool" not in st.session_state:
         raw_players.append({"name": f"Domestic Prospect #{len(raw_players)+1}", "role": "Bowler", "rating": 72, "potential": 78, "age": 22, "xp": 0, "trait": "Line & Length"})
     st.session_state.player_pool = raw_players[:200]
 
-# Initialize Teams with Morale and Finances
+# Initialize Teams with budget and distribution
 if "teams" not in st.session_state:
     team_list = ["Mumbai Elite", "Chennai Kings", "Bangalore Tech", "Delhi Capitals", "Kolkata Knights", "Gujarat Titans", "Rajasthan Royals", "Lucknow Super Giant"]
     st.session_state.teams = {}
@@ -241,6 +241,16 @@ if "user_team_key" not in st.session_state or st.session_state.user_team_key not
 if "recent_scorecards" not in st.session_state:
     st.session_state.recent_scorecards = []
 
+# ==========================================
+# 🛠️ DEFENSIVE SCHEMA MIGRATION BLOCK (FIXES KEYERROR)
+# ==========================================
+for t_name, team_obj in st.session_state.teams.items():
+    if "morale" not in team_obj:
+        team_obj["morale"] = 85
+    if "training_mult" not in team_obj:
+        team_obj["training_mult"] = 1.0
+
+# Safe assignment
 user_team = st.session_state.teams[st.session_state.user_team_key]
 
 # ==========================================
@@ -410,7 +420,7 @@ with tab_roster:
 # ==========================================
 with tab_standings:
     st.subheader("📊 Dynamic League Standings Board")
-    standings_data = [{"Franchise Block": t["name"], "Points Ledger": t["points"], "Wins": t["wins"], "Losses": t["losses"], "Morale Status": f"{t['morale']}%"} for t in st.session_state.teams.values()]
+    standings_data = [{"Franchise Block": t["name"], "Points Ledger": t["points"], "Wins": t["wins"], "Losses": t["losses"], "Morale Status": f"{t.get('morale', 85)}%"} for t in st.session_state.teams.values()]
     st.table(pd.DataFrame(standings_data).sort_values(by="Points Ledger", ascending=False))
     
     if st.session_state.recent_scorecards:
@@ -479,7 +489,6 @@ with tab_office:
             user_team["squad"].append(p2)
             partner_team["squad"].append(p1)
             
-            # Auto update active 11 sets if swapped player was a starter
             if p1 in user_team["playing_11"]: user_team["playing_11"].remove(p1); user_team["playing_11"].append(p2)
             if p2 in partner_team["playing_11"]: partner_team["playing_11"].remove(p2); partner_team["playing_11"].append(p1)
             
@@ -491,7 +500,6 @@ with tab_office:
         all_keys = list(st.session_state.teams.keys())
         random.shuffle(all_keys)
         
-        # Execute Matchday Simulations
         for idx in range(0, len(all_keys), 2):
             t1 = st.session_state.teams[all_keys[idx]]
             t2 = st.session_state.teams[all_keys[idx+1]]
@@ -506,22 +514,19 @@ with tab_office:
                 t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2["morale"] + 4)
                 t1["losses"] += 1; t1["morale"] = max(10, t1["morale"] - 6)
 
-        # Progression engine simulation logic (XP growth or regression loops)
         for t in st.session_state.teams.values():
             for p in t["squad"]:
-                # Award training cycle XP
-                p["xp"] += int(random.randint(15, 40) * t["training_mult"])
+                p["xp"] += int(random.randint(15, 40) * t.get("training_mult", 1.0))
                 if p["xp"] >= 100:
                     p["xp"] = 0
-                    if p["age"] < 33: # Growth window
+                    if p["age"] < 33:
                         if p["rating"] < p["potential"]:
                             p["rating"] += 1
-                    else: # Over-age regression curve drops rating mechanics
+                    else:
                         p["rating"] -= 1
 
         st.session_state.match_day += 1
         
-        # Handle Season Conclusion Lifecycle Reset
         if st.session_state.match_day > 14:
             st.session_state.match_day = 1
             for t in st.session_state.teams.values():
