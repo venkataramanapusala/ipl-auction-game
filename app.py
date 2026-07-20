@@ -1,6 +1,7 @@
 import streamlit as st
 import random
 import time
+import pandas as pd
 from streamlit_autorefresh import st_autorefresh
 
 # --- ULTIMATE EXECUTIVE DASHBOARD CONFIGURATION ---
@@ -234,9 +235,12 @@ if "player_pool" not in st.session_state:
         {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50, "age": 41}
     ]
     
+    # Guarantee full database pool counts to exactly 200 items smoothly
+    while len(raw_pool) < 200:
+        raw_pool.append({"name": f"Domestic Prospect #{len(raw_pool)+1}", "role": "Bowler", "rating": 75, "base_price": 20, "age": 22})
+
     # Inject Development State variables into each player data structure
     for p in raw_pool:
-        # Calculate ceiling based on biological age distribution
         if p["age"] < 25:
             p["base_pot"] = min(99, p["rating"] + random.randint(8, 14))
         elif p["age"] < 30:
@@ -328,7 +332,7 @@ elif st.session_state.game_stage == "auction":
             st.session_state.log_msg = f"Next up: {player['name']}!"
 
         st_autorefresh(interval=1000, key="auction_timer")
-        st.markdown(f"<div class='big-font'>🔨 LIVE AUCTION CARD ({idx+1}/200)</div>", unsafe_allow_html=True)
+        st.markdown(f"<h3>🔨 LIVE AUCTION CARD ({idx+1}/200)</h3>", unsafe_allow_html=True)
         
         if st.button("⚡ Fast-Track Rest of Auction", type="secondary", use_container_width=True):
             while st.session_state.auction_index < len(st.session_state.player_pool):
@@ -374,10 +378,12 @@ elif st.session_state.game_stage == "auction":
 
         st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']} | <strong>📅 Age:</strong> {player['age']}</div>", unsafe_allow_html=True)
         
+        # Defensive label configuration mapping for clean execution tracking
+        high_bidder_label = st.session_state.highest_bidder["team_name"] if st.session_state.highest_bidder is not None else 'No Bids'
         st.metric(
             label="Current High Bid Status", 
             value=f"₹{st.session_state.current_bid/100:.2f} CR", 
-            delta=f"Leader: {st.session_state.highest_bidder['team_name'] if st.session_state.highest_bidder else 'No Bids'}"
+            delta=f"Leader: {high_bidder_label}"
         )
 
         human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
@@ -467,7 +473,7 @@ elif st.session_state.game_stage == "dashboard":
                         "inn1_bat": ms['innings_1_bat_final'], "inn1_bowl": ms['innings_1_bowl_final'], "inn1_ytb": [], "inn2_bat": inn2_bat_final, "inn2_bowl": inn2_bowl_final, "inn2_ytb": inn2_yet_to_bat
                     })
                     
-                    # MATCHDAY CONCLUSION TRAINING PASS: Apply matchday XP accumulation loops across the active playing roster elements
+                    # MATCHDAY CONCLUSION TRAINING PASS: Apply matchday XP accumulation loops across active elements
                     for player in u_t["squad"]:
                         is_starter = player in u_t["playing_11"]
                         age_mult = 2.5 if player["age"] < 25 else 1.0
