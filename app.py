@@ -208,7 +208,7 @@ if "player_pool" not in st.session_state:
         {"name": "Sanju Samson", "role": "Wicket-Keeper", "rating": 89, "base_price": 100, "age": 29},
         {"name": "KL Rahul", "role": "Wicket-Keeper", "rating": 89, "base_price": 150, "age": 34},
         {"name": "Ishan Kishan", "role": "Wicket-Keeper", "rating": 86, "base_price": 100, "age": 27},
-        {"name": "Nicholas Pooran", "role": "Wicket-Keeper", "rating": 92, "base_price": 150, "age": 30},
+        {"name": "Nicholas Pooran", "wicket-keeper": True, "role": "Wicket-Keeper", "rating": 92, "base_price": 150, "age": 30},
         {"name": "Quinton de Kock", "role": "Wicket-Keeper", "rating": 86, "base_price": 100, "age": 33},
         {"name": "Phil Salt", "role": "Wicket-Keeper", "rating": 88, "base_price": 75, "age": 29},
         {"name": "Jos Buttler", "role": "Wicket-Keeper", "rating": 91, "base_price": 150, "age": 35},
@@ -252,7 +252,7 @@ if "player_pool" not in st.session_state:
         p["xp"] = 0
         p["plan"] = "Balanced Alignment"
         p["match_rating_history"] = []
-        p["form"] = "Good"
+        p["form"] = random.choice(["Steady", "Good", "Red-Hot"])
         
     st.session_state.player_pool = raw_pool
     random.shuffle(st.session_state.player_pool)
@@ -279,6 +279,16 @@ st.markdown("""
     .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
     </style>
 """, unsafe_allow_html=True)
+
+# --- HELPERS FOR PERFORMANCE FLUCTUATIONS ---
+def get_form_offset(form_string):
+    mapping = {"Slumping": -4, "Steady": 0, "Good": 2, "Red-Hot": 5}
+    return mapping.get(form_string, 0)
+
+def trigger_form_roulette():
+    for t in st.session_state.teams:
+        for p in t["squad"]:
+            p["form"] = random.choice(["Slumping", "Steady", "Good", "Red-Hot"])
 
 # --- STAGE 1: SETUP ---
 if st.session_state.game_stage == "setup":
@@ -378,7 +388,6 @@ elif st.session_state.game_stage == "auction":
 
         st.markdown(f"<div class='card-box'><strong>🏃 Active Asset:</strong> {player['name']} | <strong>📊 Rating:</strong> {player['rating']} | <strong>📅 Age:</strong> {player['age']}</div>", unsafe_allow_html=True)
         
-        # Defensive label configuration mapping for clean execution tracking
         high_bidder_label = st.session_state.highest_bidder["team_name"] if st.session_state.highest_bidder is not None else 'No Bids'
         st.metric(
             label="Current High Bid Status", 
@@ -397,10 +406,8 @@ elif st.session_state.game_stage == "auction":
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
     
-    # Extract human manager options safely inside dashboard stage
     human_squads = [t for t in st.session_state.teams if t["is_human"]]
     
-    # RENDER GLOBAL CONSOLE SWITCHER IN CORNER
     if len(human_squads) > 1:
         col_main_h, col_switch_h = st.columns([4, 1])
         with col_switch_h:
@@ -452,10 +459,11 @@ elif st.session_state.game_stage == "dashboard":
                 result_headline = f"{ms['bat_team'] if ms['score'] >= ms['target'] else ms['bowl_team']} won {margin_text}!"
 
                 if user_won:
-                    st.success("🎉 TOURNAMENT VICTORY!"); u_t["points"] += 2; u_t["wins"] += 1; u_t["morale"] = min(100, u_t["morale"] + 8)
-                    o_t["losses"] += 1
+                    st.success("🎉 TOURNAMENT VICTORY!"); u_t["points"] += 2; u_t["wins"] += 1; u_t["morale"] = min(100, u_t["morale"] + 10)
+                    o_t["losses"] += 1; o_t["morale"] = max(20, o_t["morale"] - 5)
                 else:
-                    st.error("🔴 MATCHDAY DEFEAT!"); o_t["points"] += 2; o_t["wins"] += 1; u_t["losses"] += 1; u_t["morale"] = max(20, u_t["morale"] - 10)
+                    st.error("🔴 MATCHDAY DEFEAT!"); o_t["points"] += 2; o_t["wins"] += 1; u_t["losses"] += 1; u_t["morale"] = max(20, u_t["morale"] - 12)
+                    o_t["morale"] = min(100, o_t["morale"] + 5)
                 
                 if st.button("Finalize and Save Scorecard Matrix"):
                     inn2_bat_final, inn2_yet_to_bat = [], []
@@ -473,7 +481,6 @@ elif st.session_state.game_stage == "dashboard":
                         "inn1_bat": ms['innings_1_bat_final'], "inn1_bowl": ms['innings_1_bowl_final'], "inn1_ytb": [], "inn2_bat": inn2_bat_final, "inn2_bowl": inn2_bowl_final, "inn2_ytb": inn2_yet_to_bat
                     })
                     
-                    # MATCHDAY CONCLUSION TRAINING PASS: Apply matchday XP accumulation loops across active elements
                     for player in u_t["squad"]:
                         is_starter = player in u_t["playing_11"]
                         age_mult = 2.5 if player["age"] < 25 else 1.0
@@ -487,6 +494,7 @@ elif st.session_state.game_stage == "dashboard":
                                 player["rating"] += 1
                             player["xp"] = 0
                             
+                    trigger_form_roulette()
                     st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
                 st.stop()
 
@@ -534,7 +542,6 @@ elif st.session_state.game_stage == "dashboard":
 
     st.header(f"🏆 IPL Franchise Operations Hub — Day {st.session_state.match_day}/14")
     
-    # MATCHDAY ENVIRONMENT CARD
     st.markdown(f"""
         <div style='padding: 20px; border-radius: 14px; background: linear-gradient(135deg, #1E1B4B, #0F172A); border: 1px solid #3B82F6; margin-bottom: 24px;'>
             <h4 style='margin:0; color:#38BDF8; font-weight:800;'>🏟️ CURRENT MATCHDAY ENVIRONMENT: {st.session_state.current_venue['name']}</h4>
@@ -578,19 +585,20 @@ elif st.session_state.game_stage == "dashboard":
                     user_team["impact_player"] = player_map[new_sub] if new_sub != "None" else None
                     st.success("Roster configurations stored!")
             with col_preview:
-                st.markdown("#### 🏋️ Active Squad Matrix & Development Assignment")
+                st.markdown("#### 🏋️ Active Squad Matrix & Assignment")
                 for p in user_team["squad"]:
                     is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
-                    color_tag = "#38BDF8" if "Starter" in is_starter else ("#F59E0B" if "Impact" in is_starter else "#475569")
                     
+                    form_color = "red" if p["form"] == "Slumping" else ("orange" if p["form"] == "Steady" else "green")
                     with st.expander(f"{p['name']} (OVR {p['rating']} | Age {p['age']}) — {is_starter}"):
-                        p["plan"] = st.selectbox("Strategic Target Development Plan:", ["Balanced Alignment", "Focused Skill Burst", "Tactical IQ Training"], key=f"plan_sel_{p['name']}", index=0 if p["plan"] == "Balanced Alignment" else (1 if p["plan"] == "Focused Skill Burst" else 2))
+                        st.markdown(f"**Current Player Condition:** :{form_color}[{p['form']}] (OVR Impact: {get_form_offset(p['form']):+})")
+                        p["plan"] = st.selectbox("Strategic Target Plan:", ["Balanced Alignment", "Focused Skill Burst", "Tactical IQ Training"], key=f"plan_sel_{p['name']}", index=0 if p["plan"] == "Balanced Alignment" else (1 if p["plan"] == "Focused Skill Burst" else 2))
                         st.progress(p["xp"] / 100)
                         st.caption(f"XP Status: {p['xp']}/100 | Hidden Potential Ceiling: {p['dyn_pot']}")
 
     # --- TAB 3: STANDINGS ---
     with tab_table:
-        st.table(sorted([{"Franchise Team": t["team_name"], "Wins": t["wins"], "Losses": t["losses"], "Points": t["points"]} for t in st.session_state.teams], key=lambda x: x["Points"], reverse=True))
+        st.table(sorted([{"Franchise Team": t["team_name"], "Wins": t["wins"], "Losses": t["losses"], "Points": t["points"], "Morale Index": f"{t.get('morale', 75)}%"} for t in st.session_state.teams], key=lambda x: x["Points"], reverse=True))
 
     # --- TAB 4: CAPS RACE ---
     with tab_caps:
@@ -602,17 +610,65 @@ elif st.session_state.game_stage == "dashboard":
             st.markdown("### 🟣 Purple Cap Leaderboard")
             for idx, (name, wck) in enumerate(sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]): st.write(f"**{idx+1}. {name}** — {wck} wickets")
 
-    # --- TAB 5: OFFICE CONSOLE & DYNAMIC PROGRESSION SYSTEMS ---
+    # --- TAB 5: OFFICE CONSOLE & INTERACTIVE MANAGEMENT PACKS ---
     with tab_career:
         if user_team:
             opp_team = next(t for t in st.session_state.teams if not t["is_human"])
+            
             col_met1, col_met2, col_met3 = st.columns(3)
             with col_met1: st.metric("Franchise Points", user_team["points"])
             with col_met2: st.metric("Locker Morale", f"{user_team['morale']}%")
             with col_met3: st.metric("Budget Remaining", f"₹{user_team['purse']/100:.2f} CR")
             st.divider()
             
-            # END OF SEASON ENGINE OVERLAY TRIPPED ONCE TERMINAL REACHES THE DAY 14 HARD CEILING
+            # SIDE FEATURE A: EMERGENCY TEAM DINNER INTERVENTION
+            st.markdown("### 📣 Corporate Management Desk")
+            if st.button("🌟 Fund Executive Team Dinner Intervention (Cost: ₹1,000 L / 1.00 CR)", use_container_width=True):
+                if user_team["purse"] >= 100:
+                    user_team["purse"] -= 100
+                    user_team["morale"] = min(100, user_team["morale"] + 15)
+                    st.success("🎉 Morale Strategy Deployed! Squad locker motivation increased by +15% safely.")
+                    st.rerun()
+                else:
+                    st.error("Insufficient liquidity pipeline reserves.")
+            
+            st.divider()
+            
+            # SIDE FEATURE B: TRANSFER WINDOW TRADE HUB INTERFACE
+            st.markdown("### 🔄 Mid-Season Player Asset Trade Portal")
+            trade_team_options = [t["team_name"] for t in st.session_state.teams if t["team_name"] != user_team["team_name"]]
+            selected_trade_team_name = st.selectbox("Select Target Negotiation Franchise Partner:", options=trade_team_options)
+            trade_partner_team = next(t for t in st.session_state.teams if t["team_name"] == selected_trade_team_name)
+            
+            c_tr1, c_tr2 = st.columns(2)
+            with c_tr1:
+                my_released_player_name = st.selectbox("Designate Asset to Release from Your Squad:", options=[p["name"] for p in user_team["squad"]])
+            with c_tr2:
+                acquired_player_name = st.selectbox("Select Player to Acquire from Partner:", options=[p["name"] for p in trade_partner_team["squad"]])
+                
+            if st.button("🤝 Finalize Binding Multi-Franchise Trade Agreement", use_container_width=True):
+                p_out = next(p for p in user_team["squad"] if p["name"] == my_released_player_name)
+                p_in = next(p for p in trade_partner_team["squad"] if p["name"] == acquired_player_name)
+                
+                # Execute real-time array exchange steps
+                user_team["squad"].remove(p_out)
+                trade_partner_team["squad"].remove(p_in)
+                user_team["squad"].append(p_in)
+                trade_partner_team["squad"].append(p_out)
+                
+                # Dynamic playing XI realignment safe guard validation mapping
+                if p_out in user_team["playing_11"]:
+                    user_team["playing_11"].remove(p_out)
+                    user_team["playing_11"].append(p_in)
+                if p_in in trade_partner_team["playing_11"]:
+                    trade_partner_team["playing_11"].remove(p_in)
+                    trade_partner_team["playing_11"].append(p_out)
+                    
+                st.success(f"Transaction Complete! {p_out['name']} exchanged for {p_in['name']}.")
+                st.rerun()
+                
+            st.divider()
+            
             if st.session_state.match_day > 14:
                 st.warning("🚨 SEASON HAS CONCLUDED! The board is processing structural contracts and age progression metrics.")
                 if st.button("🔄 Execute End-of-Season Recalculation Loop", type="primary", use_container_width=True):
@@ -620,14 +676,12 @@ elif st.session_state.game_stage == "dashboard":
                     for t in st.session_state.teams:
                         for p in t["squad"]:
                             old_ovr = p["rating"]
-                            # Young players with high team morale gain breakout potential boosts
                             if p["age"] < 25 and t["morale"] > 80:
                                 p["dyn_pot"] = min(99, p["dyn_pot"] + random.randint(1, 3))
                                 p["rating"] = min(p["dyn_pot"], p["rating"] + 2)
                                 st.write(f"• 📈 **Breakout Superstar:** {p['name']} ({t['team_name']}) grew to `{p['rating']}` OVR. Ceiling expanded to `{p['dyn_pot']}`.")
-                            # Biological Age Regression Loop triggered smoothly at Age 32+
                             elif p["age"] >= 32:
-                                drop = 2 if p in t["playing_11"] else 3  # Bench warming veterans decay faster
+                                drop = 2 if p in t["playing_11"] else 3
                                 p["rating"] = max(65, p["rating"] - drop)
                                 p["dyn_pot"] = p["rating"]
                                 st.write(f"• 📉 **Biological Age Regression:** Veteran {p['name']} ({t['team_name']}) drops from `{old_ovr}` to `{p['rating']}` OVR due to physical attrition factors.")
@@ -653,20 +707,27 @@ elif st.session_state.game_stage == "dashboard":
                         
                         for i in range(0, len(st.session_state.teams) - 1, 2):
                             t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-                            t1_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]])
-                            t2_b = sum([p["rating"] + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]])
+                            
+                            # Factor in venue enhancements alongside condition swings and squad motivation values
+                            t1_morale_mod = int((t1.get("morale", 75) - 75) * 0.2)
+                            t2_morale_mod = int((t2.get("morale", 75) - 75) * 0.2)
+                            
+                            t1_b = sum([p["rating"] + get_form_offset(p["form"]) + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]]) + t1_morale_mod
+                            t2_b = sum([p["rating"] + get_form_offset(p["form"]) + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]]) + t2_morale_mod
+                            
                             p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
                             t1_runs, t2_runs = random.randint(140, 220), random.randint(130, 210)
                             t2_wickets = random.randint(2, 10)
                             
                             if p1 > p2:
-                                t1["points"] += 2; t1["wins"] += 1; t2["losses"] += 1
+                                t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
+                                t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
                                 headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
                             else:
-                                t2["points"] += 2; t2["wins"] += 1; t1["losses"] += 1
+                                t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
+                                t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
                                 headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
                                 
-                            # FAST SIMULATION TRAINING ITERATION PASS
                             for t_curr in [t1, t2]:
                                 for p in t_curr["squad"]:
                                     p["xp"] += random.randint(15, 45)
@@ -704,4 +765,5 @@ elif st.session_state.game_stage == "dashboard":
                                 "inn1_bat_team": t1["team_name"], "inn1_bowl_team": t2["team_name"], "inn2_bat_team": t2["team_name"], "inn2_bowl_team": t1["team_name"],
                                 "inn1_bat": inn1_bat_list, "inn1_bowl": inn1_bowl_list, "inn1_ytb": [], "inn2_bat": inn2_bat_list, "inn2_bowl": inn2_bowl_list, "inn2_ytb": inn2_ytb
                             })
+                        trigger_form_roulette()
                         st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
