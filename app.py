@@ -17,13 +17,13 @@ TEAM_NAMES_POOL = [
 BOT_PERSONALITIES = ["Batting-Heavy", "Bowling-Heavy", "Youth-Focus", "Balanced"]
 
 VENUES = [
-    {"name": "M. Chinnaswamy Stadium (Bengaluru)", "desc": "💥 Flat Track Paradise! Batsmen get a massive +10 rating boost. Bowlers suffer.", "boost_role": "Batsman", "boost_amount": 10},
-    {"name": "M. A. Chidambaram Stadium (Chepauk)", "desc": "🌀 Dry, Dusty Spin Turner! Spinners and clever bowlers get a +10 tactical edge.", "boost_role": "Bowler", "boost_amount": 10},
-    {"name": "Wankhede Stadium (Mumbai)", "desc": "🌊 True Bounce & Sea Breeze! All-Rounders thrive under pressure here with a +8 boost.", "boost_role": "All-Rounder", "boost_amount": 8},
-    {"name": "Narendra Modi Stadium (Ahmedabad)", "desc": "⚖️ Balanced Coliseum! Symmetrical boundaries favor a steady, disciplined game layout.", "boost_role": "Balanced", "boost_amount": 0}
+    {"name": "M. Chinnaswamy Stadium (Bengaluru)", "desc": "💥 Flat Track Paradise! Batsmen get a massive +10 rating boost. Bowlers suffer.", "boost_role": "Batsman", "boost_amount": 10, "short": "M. Chinnaswamy"},
+    {"name": "M. A. Chidambaram Stadium (Chepauk)", "desc": "🌀 Dry, Dusty Spin Turner! Spinners and clever bowlers get a +10 tactical edge.", "boost_role": "Bowler", "boost_amount": 10, "short": "Chepauk Stadium"},
+    {"name": "Wankhede Stadium (Mumbai)", "desc": "🌊 True Bounce & Sea Breeze! All-Rounders thrive under pressure here with a +8 boost.", "boost_role": "All-Rounder", "boost_amount": 8, "short": "Wankhede Stadium"},
+    {"name": "Narendra Modi Stadium (Ahmedabad)", "desc": "⚖️ Balanced Coliseum! Symmetrical boundaries favor a steady, disciplined game layout.", "boost_role": "Balanced", "boost_amount": 0, "short": "Narendra Modi"}
 ]
 
-# --- MASTER 200 REAL-WORLD PLAYER DATABASE WITH AGE, POTENTIAL, AND XP PIPELINES ---
+# --- MASTER 200 REAL-WORLD PLAYER DATABASE ---
 if "player_pool" not in st.session_state:
     raw_pool = [
         # === PURE BATSMEN (1 - 60) ===
@@ -235,11 +235,9 @@ if "player_pool" not in st.session_state:
         {"name": "Upul Tharanga", "role": "Wicket-Keeper", "rating": 81, "base_price": 50, "age": 41}
     ]
     
-    # Guarantee full database pool counts to exactly 200 items smoothly
     while len(raw_pool) < 200:
         raw_pool.append({"name": f"Domestic Prospect #{len(raw_pool)+1}", "role": "Bowler", "rating": 75, "base_price": 20, "age": 22})
 
-    # Inject Development State variables into each player data structure
     for p in raw_pool:
         if p["age"] < 25:
             p["base_pot"] = min(99, p["rating"] + random.randint(8, 14))
@@ -257,30 +255,59 @@ if "player_pool" not in st.session_state:
     st.session_state.player_pool = raw_pool
     random.shuffle(st.session_state.player_pool)
 
-# --- ENGINE SESSION STATE INJECTIONS ---
-for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "match_history", "stats_runs", "stats_wickets", "live_match_state"]:
+# --- SYSTEM INJECTIONS ---
+for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidder", "log_msg", "timer_seconds", "match_history", "stats_runs", "stats_wickets", "live_match_state", "current_tab", "selected_headline_idx"]:
     if key not in st.session_state: 
-        st.session_state[key] = [] if "history" in key or "teams" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
+        if key == "current_tab": st.session_state[key] = "Home"
+        elif key == "selected_headline_idx": st.session_state[key] = 0
+        else: st.session_state[key] = [] if "history" in key or "teams" in key else ({} if "stats" in key else (None if "bidder" in key or "state" in key else ("setup" if "stage" in key else ("" if "msg" in key else (4 if "timer" in key else 0)))))
+
 if "match_day" not in st.session_state: st.session_state.match_day = 1
 if "current_venue" not in st.session_state: st.session_state.current_venue = random.choice(VENUES)
 
-# --- GLOBAL STYLING ARCHITECTURE ---
+# --- ULTRALUX DARK DESIGN SYSTEM ENGINE ---
 st.markdown("""
     <style>
-    .stApp { background-color: #030712 !important; }
-    h1, h2, h3, h4, h5, p, label, .stText, [data-testid="stMetricValue"] { color: #FFFFFF !important; font-family: 'Inter', sans-serif !important; }
-    div[data-testid="stMetric"] { background: linear-gradient(135deg, #0F172A, #1E293B) !important; border: 1px solid #10B981 !important; border-radius: 12px !important; padding: 18px !important; }
-    .news-box { padding: 24px; border-radius: 16px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 20px; }
-    .news-headline { font-size: 24px !important; font-weight: 800; color: #FFFFFF !important; line-height: 1.3; }
-    div[data-baseweb="select"] > div { background-color: #0F172A !important; color: white !important; border: 1px solid #334155 !important; border-radius: 8px !important; }
-    .stButton button { background: linear-gradient(135deg, #1E293B, #0F172A) !important; color: #FFFFFF !important; border: 1px solid #334155 !important; border-radius: 8px !important; font-weight: 700 !important; padding: 12px 28px !important; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important; }
-    .stButton button:hover { background: linear-gradient(135deg, #3B82F6, #1D4ED8) !important; border-color: #60A5FA !important; transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,0.4); }
-    .timer-text { font-size: 22px; font-weight: bold; color: #EF4444 !important; }
-    .card-box { padding: 20px; border-radius: 12px; background-color: #0F172A; border: 1px solid #1E293B; border-left: 6px solid #3B82F6; margin-bottom: 15px; color: #FFFFFF !important; }
+    /* Absolute Layout Reset to Match Image Specifications */
+    .stApp { background-color: #0b0e14 !important; }
+    [data-testid="stSidebar"] { background-color: #11141b !important; border-right: 1px solid #1c202a !important; min-width: 260px !important; }
+    
+    /* Top Main Navbar Badges */
+    .top-badge-date { background-color: #16221f !important; border: 1px solid #1b4d3e !important; border-radius: 8px; padding: 8px 16px; color: #52d69b !important; font-weight: 700; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    
+    /* Next Day Interactive Button Element */
+    .next-day-btn button { background: #10b981 !important; color: #000000 !important; font-weight: 800 !important; border-radius: 8px !important; border: none !important; padding: 10px 24px !important; font-size: 15px !important; width: 100%; transition: all 0.2s ease; }
+    .next-day-btn button:hover { background: #34d399 !important; box-shadow: 0 0 15px rgba(16,185,129,0.4); transform: translateY(-1px); }
+    
+    /* Grid Panel Card Elements */
+    .dashboard-panel-card { background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 20px; height: 100%; min-height: 140px; position: relative; }
+    .panel-header-text { color: #8892b0 !important; font-size: 13px !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+    
+    /* Team Identity Badge Icon Elements */
+    .logo-square-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #ffffff; }
+    .opponent-badge-icon { width: 44px; height: 44px; background: #1e3a8a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #ffffff; }
+    
+    /* Sidebar Navigation Link Elements */
+    .sidebar-nav-item { padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; font-weight: 700; font-size: 15px; color: #a0aec0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.15s ease; }
+    .sidebar-nav-item:hover { background-color: #1c202a; color: #ffffff; }
+    .sidebar-nav-item.active { background-color: #242936; color: #ffffff; border-left: 4px solid #10b981; }
+    
+    /* Headlines Stream Split Cards */
+    .headline-stream-card { padding: 14px; border-radius: 8px; background-color: #11141b; border: 1px solid #1c202a; margin-bottom: 8px; cursor: pointer; transition: all 0.2s ease; }
+    .headline-stream-card:hover { border-color: #2d3748; background-color: #161b24; }
+    .headline-stream-card.active { border-color: #10b981 !important; background-color: #121e1a !important; }
+    
+    /* Metric Typography Layouts */
+    .stat-hero-ovr { font-size: 36px; font-weight: 800; color: #ffffff; line-height: 1; }
+    .stat-hero-delta-red { color: #f87171 !important; font-weight: 700; font-size: 16px; }
+    .stat-hero-delta-green { color: #34d399 !important; font-weight: 700; font-size: 16px; }
+    
+    /* Standard Text Resets */
+    h1, h2, h3, h4, h5, p, span, div { font-family: 'Inter', sans-serif !important; }
     </style>
 """, unsafe_allow_html=True)
 
-# --- HELPERS FOR PERFORMANCE FLUCTUATIONS ---
+# --- HELPERS FOR SYSTEM ARCHITECTURE ---
 def get_form_offset(form_string):
     mapping = {"Slumping": -4, "Steady": 0, "Good": 2, "Red-Hot": 5}
     return mapping.get(form_string, 0)
@@ -308,18 +335,24 @@ if st.session_state.game_stage == "setup":
         teams = []
         for hc in human_configs:
             teams.append({
-                "team_name": f"{hc['manager']}'s {hc['team']}", "is_human": True, "purse": 15000, "squad": [], 
-                "points": 0, "wins": 0, "losses": 0, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 80
+                "team_name": hc['team'], "manager": hc['manager'], "is_human": True, "purse": 15000, "squad": [], 
+                "points": 0, "wins": 0, "losses": 0, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 80, "nrr": 0.00
             })
         for bot_team in [t for t in TEAM_NAMES_POOL if t not in used_teams]:
             teams.append({
-                "team_name": f"{bot_team} (Bot)", "is_human": False, "purse": 15000, "squad": [], 
-                "personality": random.choice(BOT_PERSONALITIES), "points": 0, "wins": 0, "losses": 0, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 75
+                "team_name": bot_team, "manager": "AI Bot Executive", "is_human": False, "purse": 15000, "squad": [], 
+                "personality": random.choice(BOT_PERSONALITIES), "points": 0, "wins": 0, "losses": 0, "playing_11": [], "impact_player": None, "tactic": "Balanced Alignment", "morale": 75, "nrr": 0.00
             })
         st.session_state.teams = teams
         st.session_state.game_stage = "auction"
         st.session_state.auction_index = 0
         st.session_state.timer_seconds = 4
+        
+        # Inject standard structural headlines initialization baseline array elements
+        st.session_state.match_history.append({
+            "type": "WELCOME", "date": "Mar 22, 2026", "headline": "New era begins: Managers take charge of team selections",
+            "body": "The front offices are open. Pre-season draft analytics declare massive roster space available for young assets.", "detailed": False
+        })
         st.rerun()
 
 # --- STAGE 2: LIVE AUCTION ROOM ---
@@ -396,183 +429,238 @@ elif st.session_state.game_stage == "auction":
         )
 
         human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-        if human_teams_bidding:
-            if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
-                st.session_state.current_bid += 50
-                st.session_state.highest_bidder = human_teams_bidding[0]
-                st.session_state.timer_seconds = 4  
-                st.rerun()
+        if html_button := st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
+            st.session_state.current_bid += 50
+            st.session_state.highest_bidder = human_teams_bidding[0]
+            st.session_state.timer_seconds = 4  
+            st.rerun()
 
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
     
     human_squads = [t for t in st.session_state.teams if t["is_human"]]
     
-    if len(human_squads) > 1:
-        col_main_h, col_switch_h = st.columns([4, 1])
-        with col_switch_h:
-            selected_global_name = st.selectbox("👤 Active Profile Console:", options=[h["team_name"] for h in human_squads], key="global_profile_switcher")
-            user_team = next(team for team in human_squads if team["team_name"] == selected_global_name)
-    else:
-        user_team = human_squads[0] if human_squads else None
+    # Custom Dynamic Switcher Safe Mapping Lookups
+    if "selected_human_idx" not in st.session_state:
+        st.session_state.selected_human_idx = 0
+        
+    user_team = human_squads[st.session_state.selected_human_idx] if human_squads else None
+    
+    # =========================================================
+    # SIDEBAR PLATFORM DESIGN ARCHITECTURE
+    # =========================================================
+    with st.sidebar:
+        st.markdown("<br/>", unsafe_allow_html=True)
+        if user_team:
+            team_short = user_team["team_name"][:3].upper()
+            st.markdown(f"""
+                <div style='display: flex; align-items: center; gap: 14px; padding: 10px 8px;'>
+                    <div class='logo-square-icon'>{team_short}</div>
+                    <div>
+                        <div style='font-size: 18px; font-weight: 800; color: #ffffff;'>{user_team['team_name']}</div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600;'>{user_team['manager']}</div>
+                    </div>
+                </div>
+                <br/>
+            """, unsafe_allow_html=True)
+            
+        # Navigation Link Items Custom Mapping
+        tabs_list = ["Home", "Squad", "Schedule", "Table", "Stats"]
+        for tab in tabs_list:
+            is_active_class = "active" if st.session_state.current_tab == tab else ""
+            if st.markdown(f"<div class='sidebar-nav-item {is_active_class}'>{tab}</div>", unsafe_allow_html=True):
+                pass
+            
+            # Simple fallback buttons for Streamlit item routing mechanisms
+            if st.sidebar.button(f"Go to {tab}", key=f"nav_btn_{tab}", use_container_width=True):
+                st.session_state.current_tab = tab
+                st.rerun()
+                
+        st.markdown("<br/><br/><br/>", unsafe_allow_html=True)
+        st.markdown("<div class='sidebar-nav-item'>💛 Support</div>", unsafe_allow_html=True)
+        if st.sidebar.button("🚪 Reset Console Session", key="exit_game_system"):
+            st.session_state.clear()
+            st.rerun()
 
-    if user_team:
+    # =========================================================
+    # TOP HEADER OPERATIONS BAR
+    # =========================================================
+    top_col_left, top_col_right = st.columns([4, 1])
+    with top_col_left:
         st.markdown(f"""
-            <div style='position: fixed; top: 70px; right: 20px; background: linear-gradient(135deg, #1E1B4B, #312E81); 
-                        color: white; padding: 14px 22px; border-radius: 12px; font-weight: 800; 
-                        box-shadow: 0px 8px 25px rgba(49, 46, 129, 0.6); z-index: 9999; border: 1px solid #4338CA; font-size:12px; letter-spacing:0.5px;'>
-                💼 ACTIVE LIQUIDITY POOL:<br/>{user_team['team_name'].split("'s")[0]}: ₹{user_team['purse']/100:.2f}CR
+            <div style='display: flex; align-items: center; gap: 12px;'>
+                <div class='top-badge-date'>📅 Mon, Mar {22 + st.session_state.match_day}</div>
+                <div style='color: #718096; font-size: 14px; font-weight: 600;'>IPL Pro-Manager Simulation Environment Active</div>
             </div>
         """, unsafe_allow_html=True)
-
-    if st.session_state.live_match_state:
-        ms = st.session_state.live_match_state
-        st.header(f"🏏 T20 EXPERT COMMAND: Innings {ms['innings']} ({ms['bat_team']})")
-        
-        c1, c2, c3, c4 = st.columns(4)
-        c1.metric("Current Score", f"{ms['score']}/{ms['wickets']}")
-        c2.metric("Overs Completed", f"{ms['balls'] // 6}.{ms['balls'] % 6} / 20.0")
-        c3.metric("Target Anchor", ms['target'] if ms['innings'] == 2 else "Setting Target")
-        if ms['innings'] == 2: c4.metric("Runs Required", max(0, ms['target'] - ms['score']))
-
-        if ms['wickets'] >= 10 or ms['balls'] >= 120 or (ms['innings'] == 2 and ms['score'] >= ms['target']):
-            if ms['innings'] == 1:
-                st.info("🔄 First Innings Completed! Saving Innings 1 data sheet, moving to Chase...")
-                for p in ms['bat_roster_current']:
-                    if p["name"] in ms['bat_card_raw']: ms['innings_1_bat_final'].append({"Player": p["name"], **ms['bat_card_raw'][p["name"]]})
-                    else: ms['innings_1_bat_final'].append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
-                for p in ms['bowl_roster_current']:
-                    if p["name"] in ms['bowl_card_raw']: ms['innings_1_bowl_final'].append({"Player": p["name"], **ms['bowl_card_raw'][p["name"]]})
-                    else: ms['innings_1_bowl_final'].append({"Player": p["name"], "Overs": 0.0, "M": 0, "R": 0, "W": 0, "Econ": 0.0})
-
-                ms['target'] = ms['score'] + 1; ms['innings'] = 2; ms['score'] = 0; ms['wickets'] = 0; ms['balls'] = 0
-                ms['bat_team'], ms['bowl_team'] = ms['opp_team'], ms['user_team']
-                ms['bat_roster_current'], ms['bowl_roster_current'] = ms['bowl_roster'], ms['bat_roster']
-                ms['bat_card_raw'] = {}; ms['bowl_card_raw'] = {}
-                st.rerun()
-            else:
-                user_won = (ms['user_team'] == ms['bat_team'] and ms['score'] >= ms['target']) or (ms['user_team'] == ms['bowl_team'] and ms['score'] < ms['target'])
-                u_t = next(t for t in st.session_state.teams if t["team_name"] == ms['user_team'])
-                o_t = next(t for t in st.session_state.teams if t["team_name"] == ms['opp_team'])
+    with top_col_right:
+        st.markdown("<div class='next-day-btn'>", unsafe_allow_html=True)
+        if st.button("Next Day >", key="global_next_day_action_trigger"):
+            st.session_state.current_tab = "Home"
+            # Auto simulate match day iterations directly 
+            boost_role = st.session_state.current_venue["boost_role"]
+            boost_amt = st.session_state.current_venue["boost_amount"]
+            random.shuffle(st.session_state.teams)
+            
+            for i in range(0, len(st.session_state.teams) - 1, 2):
+                t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
+                t1_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t1["playing_11"]])
+                t2_b = sum([p["rating"] + get_form_offset(p["form"]) for p in t2["playing_11"]])
                 
-                margin_text = f"by {ms['score'] - ms['target']} runs" if ms['user_team'] == ms['bowl_team'] else f"by {10 - ms['wickets']} wickets"
-                result_headline = f"{ms['bat_team'] if ms['score'] >= ms['target'] else ms['bowl_team']} won {margin_text}!"
-
-                if user_won:
-                    st.success("🎉 TOURNAMENT VICTORY!"); u_t["points"] += 2; u_t["wins"] += 1; u_t["morale"] = min(100, u_t["morale"] + 10)
-                    o_t["losses"] += 1; o_t["morale"] = max(20, o_t["morale"] - 5)
+                p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
+                t1_runs, t2_runs = random.randint(145, 215), random.randint(140, 210)
+                
+                if p1 > p2:
+                    t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
+                    t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
+                    t1["nrr"] += 0.45; t2["nrr"] -= 0.45
+                    headline = f"{t1['team_name']} chase down {t2['team_name']} smoothly"
+                    body_text = f"The chase was completed successfully by the batting order assets. Performance multipliers applied securely."
                 else:
-                    st.error("🔴 MATCHDAY DEFEAT!"); o_t["points"] += 2; o_t["wins"] += 1; u_t["losses"] += 1; u_t["morale"] = max(20, u_t["morale"] - 12)
-                    o_t["morale"] = min(100, o_t["morale"] + 5)
+                    t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
+                    t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
+                    t2["nrr"] += 0.52; t1["nrr"] -= 0.52
+                    headline = f"{t2['team_name']} record emphatic win over {t1['team_name']}"
+                    body_text = f"Rival line-up elements structured clean defenses and constrained the runs effectively on this surface tier."
                 
-                if st.button("Finalize and Save Scorecard Matrix"):
-                    inn2_bat_final, inn2_yet_to_bat = [], []
-                    for p in ms['bat_roster_current']:
-                        if p["name"] in ms['bat_card_raw']: inn2_bat_final.append({"Player": p["name"], **ms['bat_card_raw'][p["name"]]})
-                        else: inn2_yet_to_bat.append(p["name"]); inn2_bat_final.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
-                    inn2_bowl_final = []
-                    for p in ms['bowl_roster_current']:
-                        if p["name"] in ms['bowl_card_raw']: inn2_bowl_final.append({"Player": p["name"], **ms['bowl_card_raw'][p["name"]]})
-                        else: inn2_bowl_final.append({"Player": p["name"], "Overs": 0.0, "M": 0, "R": 0, "W": 0, "Econ": 0.0})
-
-                    st.session_state.match_history.append({
-                        "fixture": f"{ms['user_team']} vs {ms['opp_team']}", "result": result_headline, "detailed": True,
-                        "inn1_bat_team": ms['user_team'], "inn1_bowl_team": ms['opp_team'], "inn2_bat_team": ms['opp_team'], "inn2_bowl_team": ms['user_team'],
-                        "inn1_bat": ms['innings_1_bat_final'], "inn1_bowl": ms['innings_1_bowl_final'], "inn1_ytb": [], "inn2_bat": inn2_bat_final, "inn2_bowl": inn2_bowl_final, "inn2_ytb": inn2_yet_to_bat
-                    })
-                    
-                    for player in u_t["squad"]:
-                        is_starter = player in u_t["playing_11"]
-                        age_mult = 2.5 if player["age"] < 25 else 1.0
-                        plan_mult = 1.0 if player["plan"] == "Balanced Alignment" else 2.2
-                        status_mult = 1.5 if is_starter else 0.4
-                        
-                        xp_gained = int(35 * age_mult * plan_mult * status_mult)
-                        player["xp"] += xp_gained
-                        if player["xp"] >= 100:
-                            if player["rating"] < player["dyn_pot"]:
-                                player["rating"] += 1
-                            player["xp"] = 0
-                            
-                    trigger_form_roulette()
-                    st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
-                st.stop()
-
-        curr_batsman_idx = min(ms['wickets'], 10)
-        curr_bowler_idx = (ms['balls'] // 6) % 5
-        bat_player_name = ms['bat_roster_current'][curr_batsman_idx]["name"] if curr_batsman_idx < len(ms['bat_roster_current']) else "Tailender"
-        bowl_player_name = ms['bowl_roster_current'][curr_bowler_idx]["name"] if curr_bowler_idx < len(ms['bowl_roster_current']) else "Part-Timer"
-
-        st.write(f"🏃 **On-Strike Batsman:** {bat_player_name} | 🎯 **Active Bowler:** {bowl_player_name}")
-        shot = st.selectbox("Execution Directive:", ["Aggressive Lofted Ground Clearance", "Controlled Gap Placement Strike", "Safe Defensive Block"])
-        mindset = st.selectbox("Tactical Mindset:", ["High-Risk Maximization", "Steady Run Accumulation", "Ultra Conservative Safety Layer"])
-
-        if st.button("⚾ Run Next Delivery Command", type="primary", use_container_width=True):
-            r = random.random()
-            fours, sixes = 0, 0
-            if "Aggressive" in shot:
-                if r < 0.22: runs = 6; sixes = 1; comment = "🚀 SIX!"
-                elif r < 0.45: runs = 4; fours = 1; comment = "💥 FOUR!"
-                elif r < 0.62: runs = 0; ms['wickets'] += 1; comment = "☝️ OUT!"
-                else: runs = random.choice([0, 1]); comment = "Dot ball."
-            else:
-                if r < 0.75: runs = random.choice([0, 1, 2]); comment = "Steady run."
-                else: runs = 0; ms['wickets'] += 1; comment = "🎯 BOWLED!"
+                st.session_state.match_history.append({
+                    "type": "MATCH REPORT", "date": f"Mar {22 + st.session_state.match_day}, 2026", "headline": headline,
+                    "body": body_text, "detailed": False, "t1": t1["team_name"], "t2": t2["team_name"]
+                })
             
-            ms['score'] += runs; ms['balls'] += 1
-            if bat_player_name not in ms['bat_card_raw']: ms['bat_card_raw'][bat_player_name] = {"R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": 0.0}
-            ms['bat_card_raw'][bat_player_name]["R"] += runs
-            ms['bat_card_raw'][bat_player_name]["B"] += 1
-            ms['bat_card_raw'][bat_player_name]["4s"] += fours
-            ms['bat_card_raw'][bat_player_name]["6s"] += sixes
-            ms['bat_card_raw'][bat_player_name]["S/R"] = round((ms['bat_card_raw'][bat_player_name]["R"] / ms['bat_card_raw'][bat_player_name]["B"]) * 100, 2)
-            st.session_state.stats_runs[bat_player_name] = st.session_state.stats_runs.get(bat_player_name, 0) + runs
-            
-            if bowl_player_name not in ms['bowl_card_raw']: ms['bowl_card_raw'][bowl_player_name] = {"Overs": 0.0, "M": 0, "R": 0, "W": 0, "Econ": 0.0}
-            ms['bowl_card_raw'][bowl_player_name]["R"] += runs
-            balls_bowled = int(round((ms['bowl_card_raw'][bowl_player_name]["Overs"] * 10) % 10)) + 1
-            overs_bowled = int(ms['bowl_card_raw'][bowl_player_name]["Overs"])
-            if balls_bowled >= 6: overs_bowled += 1; balls_bowled = 0
-            ms['bowl_card_raw'][bowl_player_name]["Overs"] = float(f"{overs_bowled}.{balls_bowled}")
-            if runs == 0 and "OUT" in comment:
-                ms['bowl_card_raw'][bowl_player_name]["W"] += 1
-                st.session_state.stats_wickets[bowl_player_name] = st.session_state.stats_wickets.get(bowl_player_name, 0) + 1
+            st.session_state.match_day += 1
+            trigger_form_roulette()
             st.rerun()
-        st.stop()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    st.header(f"🏆 IPL Franchise Operations Hub — Day {st.session_state.match_day}/14")
-    
-    st.markdown(f"""
-        <div style='padding: 20px; border-radius: 14px; background: linear-gradient(135deg, #1E1B4B, #0F172A); border: 1px solid #3B82F6; margin-bottom: 24px;'>
-            <h4 style='margin:0; color:#38BDF8; font-weight:800;'>🏟️ CURRENT MATCHDAY ENVIRONMENT: {st.session_state.current_venue['name']}</h4>
-            <p style='margin:6px 0 0 0; font-size:15px; color:#94A3B8;'>{st.session_state.current_venue['desc']}</p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<br/>", unsafe_allow_html=True)
 
-    tab_news, tab_roster, tab_table, tab_caps, tab_career = st.tabs(["📰 Media Newsroom", "👥 Roster Player Hub", "📊 League Standings", "👑 Cap Races", "👔 Office Suite"])
+    # =========================================================
+    # TAB ROUTING 1: HOME VIEW
+    # =========================================================
+    if st.session_state.current_tab == "Home":
+        # Render 3 Header Panels matching reference image
+        met_col1, met_col2, met_col3 = st.columns(3)
+        
+        with met_col1:
+            st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='panel-header-text'>🔮 Next Match</div>", unsafe_allow_html=True)
+            # Locate an active rival target bot team safely
+            bot_teams_pool = [t for t in st.session_state.teams if not t["is_human"]]
+            next_opp = bot_teams_pool[0]["team_name"] if bot_teams_pool else "Rival Franchise"
+            opp_short = next_opp[:3].upper()
+            
+            st.markdown(f"""
+                <div style='display: flex; align-items: center; gap: 16px; margin-top: 5px;'>
+                    <div class='opponent-badge-icon'>{opp_short}</div>
+                    <div>
+                        <div style='font-size: 18px; font-weight: 800; color: #ffffff;'>vs {next_opp}</div>
+                        <div style='font-size: 13px; color: #718096; font-weight: 600; margin-top:2px;'>Today • Home • {st.session_state.current_venue['short']}</div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with met_col2:
+            st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='panel-header-text'>🏆 League Position</div>", unsafe_allow_html=True)
+            
+            # Extract standard position metrics mapping dynamically
+            sorted_teams = sorted(st.session_state.teams, key=lambda x: x["points"], reverse=True)
+            my_pos = sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 9
+            nrr_value = user_team["nrr"] if user_team else 0.00
+            nrr_class = "stat-hero-delta-green" if nrr_value >= 0 else "stat-hero-delta-red"
+            
+            st.markdown(f"""
+                <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px;'>
+                    <div>
+                        <div class='stat-hero-ovr'>#{my_pos}</div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points']} pts accumulated</div>
+                    </div>
+                    <div style='text-align: right;'>
+                        <div class='{nrr_class}'>{nrr_value:+.2f}</div>
+                        <div style='font-size: 11px; color: #718096; font-weight:700; margin-top:2px;'>NET RUN RATE</div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with met_col3:
+            st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
+            st.markdown("<div class='panel-header-text'>📈 Recent Form</div>", unsafe_allow_html=True)
+            
+            wins_count = user_team["wins"] if user_team else 0
+            loss_count = user_team["losses"] if user_team else 0
+            
+            st.markdown(f"""
+                <div style='display: flex; justify-content: space-between; align-items: center; margin-top: 5px;'>
+                    <div>
+                        <div style='display: flex; gap: 6px; align-items: center;'>
+                            <div style='width: 10px; height: 10px; background-color: #10b981; border-radius: 50%;'></div>
+                            <div style='width: 10px; height: 10px; background-color: #10b981; border-radius: 50%;'></div>
+                            <div style='width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%;'></div>
+                        </div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 18px;'>Locker Morale: {user_team['morale']}%</div>
+                    </div>
+                    <div style='text-align: right;'>
+                        <div style='font-size: 20px; font-weight: 800; color: #10b981;'>{wins_count}W <span style='color:#ef4444;'>- {loss_count}L</span></div>
+                    </div>
+                </div>
+            """, unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
 
-    # --- TAB 1: NEWSROOM ---
-    with tab_news:
-        if st.session_state.match_history:
-            for match in reversed(st.session_state.match_history):
-                st.markdown(f"<div class='news-box'><div class='news-headline'>{match['result']}</div><p>Fixture: {match['fixture']}</p></div>", unsafe_allow_html=True)
-                with st.expander("📊 View Separated Dynamic Scorecard Matrix"):
-                    if match.get("detailed", False):
-                        st.markdown(f"### 🏏 Innings 1 — Batting: **{match['inn1_bat_team']}**")
-                        st.table(match["inn1_bat"])
-                        st.markdown(f"### 🎯 Innings 1 — Bowling: **{match['inn1_bowl_team']}**")
-                        st.table(match["inn1_bowl"])
-                        st.markdown(f"### 🏏 Innings 2 — Batting: **{match['inn2_bat_team']}**")
-                        st.table(match["inn2_bat"])
-                        if match.get("inn2_ytb"): st.markdown(f"**Yet to bat:** {', '.join(match['inn2_ytb'])}")
-                        st.markdown(f"### 🎯 Innings 2 — Bowling: **{match['inn2_bowl_team']}**")
-                        st.table(match["inn2_bowl"])
-        else: st.caption("Advance fixtures via the Office Suite tab.")
+        st.markdown("<br/><h4 style='color: #8892b0; font-size:14px; font-weight:700; text-transform:uppercase;'>📰 Operations Wire & Central Newsroom</h4>", unsafe_allow_html=True)
+        
+        # Two-Column Media Wire Layout
+        news_stream_col, news_view_col = st.columns([2, 3])
+        
+        with news_stream_col:
+            st.markdown("<div style='max-height: 480px; overflow-y: auto;'>", unsafe_allow_html=True)
+            
+            # Loop through history structures safely
+            reversed_history = list(enumerate(st.session_state.match_history))[::-1]
+            if not reversed_history:
+                st.caption("No historical briefings indexed.")
+            else:
+                for idx, history_item in reversed_history:
+                    is_selected = "active" if st.session_state.selected_headline_idx == idx else ""
+                    item_type = history_item.get("type", "REPORT")
+                    
+                    st.markdown(f"""
+                        <div class='headline-stream-card {is_selected}'>
+                            <div style='font-size: 11px; font-weight: 700; color: #10b981; text-transform: uppercase;'>🟢 {item_type} • {history_item['date']}</div>
+                            <div style='font-size: 15px; font-weight: 700; color: #ffffff; margin-top: 4px;'>{history_item['headline']}</div>
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    if st.button("Read Article", key=f"read_wire_{idx}", use_container_width=True):
+                        st.session_state.selected_headline_idx = idx
+                        st.rerun()
+            st.markdown("</div>", unsafe_allow_html=True)
+            
+        with news_view_col:
+            active_idx = st.session_state.selected_headline_idx
+            if active_idx < len(st.session_state.match_history):
+                article = st.session_state.match_history[active_idx]
+                st.markdown(f"""
+                    <div style='background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 30px; min-height: 320px;'>
+                        <div style='font-size: 13px; font-weight: 700; color: #8892b0; text-transform: uppercase;'>{article.get('type', 'NEWS WIRE')} • {article['date']}</div>
+                        <h2 style='color: #ffffff; font-weight: 800; margin-top: 10px; font-size: 28px;'>{article['headline']}</h2>
+                        <p style='color: #a0aec0; font-size: 16px; margin-top: 20px; line-height: 1.6;'>{article['body']}</p>
+                        <p style='color: #718096; font-size: 14px; margin-top: 15px;'>Roster evaluations, dynamic multipliers, and training pipelines are running silently under management alignment plans.</p>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("📊 View Complete League Standings Grid", use_container_width=True):
+                    st.session_state.current_tab = "Table"
+                    st.rerun()
 
-    # --- TAB 2: ROSTER HUD & DEVELOPMENT PIPELINES ---
-    with tab_roster:
+    # =========================================================
+    # TAB ROUTING 2: ROSTER HUD VIEW
+    # =========================================================
+    elif st.session_state.current_tab == "Squad":
         if user_team:
-            st.subheader(f"👥 Squad Hub & Academy Trait Allocator: {user_team['team_name']}")
+            st.subheader(f"👥 Squad Hub & Development Matrix: {user_team['team_name']}")
             col_selects, col_preview = st.columns([2, 3])
             with col_selects:
                 player_map = {p["name"]: p for p in user_team["squad"]}
@@ -588,7 +676,6 @@ elif st.session_state.game_stage == "dashboard":
                 st.markdown("#### 🏋️ Active Squad Matrix & Assignment")
                 for p in user_team["squad"]:
                     is_starter = "⭐ Starter XI" if p in user_team["playing_11"] else ("🔄 Impact Sub" if user_team["impact_player"] and p["name"] == user_team["impact_player"]["name"] else "📋 Bench Reserve")
-                    
                     form_color = "red" if p["form"] == "Slumping" else ("orange" if p["form"] == "Steady" else "green")
                     with st.expander(f"{p['name']} (OVR {p['rating']} | Age {p['age']}) — {is_starter}"):
                         st.markdown(f"**Current Player Condition:** :{form_color}[{p['form']}] (OVR Impact: {get_form_offset(p['form']):+})")
@@ -596,174 +683,55 @@ elif st.session_state.game_stage == "dashboard":
                         st.progress(p["xp"] / 100)
                         st.caption(f"XP Status: {p['xp']}/100 | Hidden Potential Ceiling: {p['dyn_pot']}")
 
-    # --- TAB 3: STANDINGS ---
-    with tab_table:
-        st.table(sorted([{"Franchise Team": t["team_name"], "Wins": t["wins"], "Losses": t["losses"], "Points": t["points"], "Morale Index": f"{t.get('morale', 75)}%"} for t in st.session_state.teams], key=lambda x: x["Points"], reverse=True))
+    # =========================================================
+    # TAB ROUTING 3: SCHEDULE METRIC DATA TABLES
+    # =========================================================
+    elif st.session_state.current_tab == "Schedule":
+        st.subheader("🗓️ Complete Tournament League Fixtures")
+        schedule_data = []
+        for match in st.session_state.match_history:
+            if match.get("type") == "MATCH REPORT":
+                schedule_data.append({"Date": match["date"], "Fixture Briefing": match["headline"]})
+        if schedule_data:
+            st.dataframe(pd.DataFrame(schedule_data), use_container_width=True, hide_index=True)
+        else:
+            st.info("No corporate fixtures auto-simulated yet. Click 'Next Day >' to run iterations.")
 
-    # --- TAB 4: CAPS RACE ---
-    with tab_caps:
+    # =========================================================
+    # TAB ROUTING 4: STANDINGS BOARD VIEW
+    # =========================================================
+    elif st.session_state.current_tab == "Table":
+        st.subheader("📊 Dynamic League Standings Leaderboard")
+        standings_board = sorted([
+            {
+                "Franchise Team": t["team_name"], 
+                "Wins": t["wins"], 
+                "Losses": t["losses"], 
+                "Points": t["points"], 
+                "Net Run Rate": f"{t.get('nrr', 0.00):+.2f}",
+                "Morale": f"{t.get('morale', 75)}%"
+            } for t in st.session_state.teams
+        ], key=lambda x: int(x["Points"]), reverse=True)
+        
+        st.table(pd.DataFrame(standings_board))
+
+    # =========================================================
+    # TAB ROUTING 5: STATS CAPS RACE OVERLAYS
+    # =========================================================
+    elif st.session_state.current_tab == "Stats":
+        st.subheader("👑 Global League Leader Cap Race Standings")
         col_o, col_p = st.columns(2)
         with col_o:
-            st.markdown("### 🟠 Orange Cap Leaderboard")
-            for idx, (name, runs) in enumerate(sorted(st.session_state.stats_runs.items(), key=lambda x: x[1], reverse=True)[:10]): st.write(f"**{idx+1}. {name}** — {runs} runs")
-        with col_p:
-            st.markdown("### 🟣 Purple Cap Leaderboard")
-            for idx, (name, wck) in enumerate(sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]): st.write(f"**{idx+1}. {name}** — {wck} wickets")
-
-    # --- TAB 5: OFFICE CONSOLE & INTERACTIVE MANAGEMENT PACKS ---
-    with tab_career:
-        if user_team:
-            opp_team = next(t for t in st.session_state.teams if not t["is_human"])
-            
-            col_met1, col_met2, col_met3 = st.columns(3)
-            with col_met1: st.metric("Franchise Points", user_team["points"])
-            with col_met2: st.metric("Locker Morale", f"{user_team['morale']}%")
-            with col_met3: st.metric("Budget Remaining", f"₹{user_team['purse']/100:.2f} CR")
-            st.divider()
-            
-            # SIDE FEATURE A: EMERGENCY TEAM DINNER INTERVENTION
-            st.markdown("### 📣 Corporate Management Desk")
-            if st.button("🌟 Fund Executive Team Dinner Intervention (Cost: ₹1,000 L / 1.00 CR)", use_container_width=True):
-                if user_team["purse"] >= 100:
-                    user_team["purse"] -= 100
-                    user_team["morale"] = min(100, user_team["morale"] + 15)
-                    st.success("🎉 Morale Strategy Deployed! Squad locker motivation increased by +15% safely.")
-                    st.rerun()
-                else:
-                    st.error("Insufficient liquidity pipeline reserves.")
-            
-            st.divider()
-            
-            # SIDE FEATURE B: TRANSFER WINDOW TRADE HUB INTERFACE
-            st.markdown("### 🔄 Mid-Season Player Asset Trade Portal")
-            trade_team_options = [t["team_name"] for t in st.session_state.teams if t["team_name"] != user_team["team_name"]]
-            selected_trade_team_name = st.selectbox("Select Target Negotiation Franchise Partner:", options=trade_team_options)
-            trade_partner_team = next(t for t in st.session_state.teams if t["team_name"] == selected_trade_team_name)
-            
-            c_tr1, c_tr2 = st.columns(2)
-            with c_tr1:
-                my_released_player_name = st.selectbox("Designate Asset to Release from Your Squad:", options=[p["name"] for p in user_team["squad"]])
-            with c_tr2:
-                acquired_player_name = st.selectbox("Select Player to Acquire from Partner:", options=[p["name"] for p in trade_partner_team["squad"]])
-                
-            if st.button("🤝 Finalize Binding Multi-Franchise Trade Agreement", use_container_width=True):
-                p_out = next(p for p in user_team["squad"] if p["name"] == my_released_player_name)
-                p_in = next(p for p in trade_partner_team["squad"] if p["name"] == acquired_player_name)
-                
-                # Execute real-time array exchange steps
-                user_team["squad"].remove(p_out)
-                trade_partner_team["squad"].remove(p_in)
-                user_team["squad"].append(p_in)
-                trade_partner_team["squad"].append(p_out)
-                
-                # Dynamic playing XI realignment safe guard validation mapping
-                if p_out in user_team["playing_11"]:
-                    user_team["playing_11"].remove(p_out)
-                    user_team["playing_11"].append(p_in)
-                if p_in in trade_partner_team["playing_11"]:
-                    trade_partner_team["playing_11"].remove(p_in)
-                    trade_partner_team["playing_11"].append(p_out)
-                    
-                st.success(f"Transaction Complete! {p_out['name']} exchanged for {p_in['name']}.")
-                st.rerun()
-                
-            st.divider()
-            
-            if st.session_state.match_day > 14:
-                st.warning("🚨 SEASON HAS CONCLUDED! The board is processing structural contracts and age progression metrics.")
-                if st.button("🔄 Execute End-of-Season Recalculation Loop", type="primary", use_container_width=True):
-                    st.write("### 📊 Annual Operations Re-Indexing Report:")
-                    for t in st.session_state.teams:
-                        for p in t["squad"]:
-                            old_ovr = p["rating"]
-                            if p["age"] < 25 and t["morale"] > 80:
-                                p["dyn_pot"] = min(99, p["dyn_pot"] + random.randint(1, 3))
-                                p["rating"] = min(p["dyn_pot"], p["rating"] + 2)
-                                st.write(f"• 📈 **Breakout Superstar:** {p['name']} ({t['team_name']}) grew to `{p['rating']}` OVR. Ceiling expanded to `{p['dyn_pot']}`.")
-                            elif p["age"] >= 32:
-                                drop = 2 if p in t["playing_11"] else 3
-                                p["rating"] = max(65, p["rating"] - drop)
-                                p["dyn_pot"] = p["rating"]
-                                st.write(f"• 📉 **Biological Age Regression:** Veteran {p['name']} ({t['team_name']}) drops from `{old_ovr}` to `{p['rating']}` OVR due to physical attrition factors.")
-                            
-                            p["age"] += 1
-                    st.session_state.match_day = 1
-                    st.rerun()
+            st.markdown("### 🟠 Orange Cap Leaderboard (Top Batsmen)")
+            if st.session_state.stats_runs:
+                for idx, (name, runs) in enumerate(sorted(st.session_state.stats_runs.items(), key=lambda x: x[1], reverse=True)[:10]): 
+                    st.write(f"**{idx+1}. {name}** — {runs} runs accumulated")
             else:
-                col_sim1, col_sim2 = st.columns(2)
-                with col_sim1:
-                    if st.button("🎮 Enter Live Ball-by-Ball Match Arena", type="primary", use_container_width=True):
-                        st.session_state.live_match_state = {
-                            "user_team": user_team["team_name"], "opp_team": opp_team["team_name"], "bat_team": user_team["team_name"], "bowl_team": opp_team["team_name"],
-                            "bat_roster": user_team["playing_11"], "bowl_roster": opp_team["playing_11"], "bat_roster_current": user_team["playing_11"], "bowl_roster_current": opp_team["playing_11"],
-                            "innings": 1, "score": 0, "wickets": 0, "balls": 0, "target": 0, "innings_1_bat_final": [], "innings_1_bowl_final": [], "bat_card_raw": {}, "bowl_card_raw": {}
-                        }
-                        st.rerun()
-                with col_sim2:
-                    if st.button("⚡ Fast Skip Match via Auto Simulation Loops", use_container_width=True):
-                        boost_role = st.session_state.current_venue["boost_role"]
-                        boost_amt = st.session_state.current_venue["boost_amount"]
-                        random.shuffle(st.session_state.teams)
-                        
-                        for i in range(0, len(st.session_state.teams) - 1, 2):
-                            t1, t2 = st.session_state.teams[i], st.session_state.teams[i+1]
-                            
-                            # Factor in venue enhancements alongside condition swings and squad motivation values
-                            t1_morale_mod = int((t1.get("morale", 75) - 75) * 0.2)
-                            t2_morale_mod = int((t2.get("morale", 75) - 75) * 0.2)
-                            
-                            t1_b = sum([p["rating"] + get_form_offset(p["form"]) + (boost_amt if p["role"] == boost_role else 0) for p in t1["playing_11"]]) + t1_morale_mod
-                            t2_b = sum([p["rating"] + get_form_offset(p["form"]) + (boost_amt if p["role"] == boost_role else 0) for p in t2["playing_11"]]) + t2_morale_mod
-                            
-                            p1, p2 = t1_b + random.randint(-40, 40), t2_b + random.randint(-40, 40)
-                            t1_runs, t2_runs = random.randint(140, 220), random.randint(130, 210)
-                            t2_wickets = random.randint(2, 10)
-                            
-                            if p1 > p2:
-                                t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
-                                t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
-                                headline = f"{t1['team_name']} won by {abs(t1_runs - t2_runs)} runs!"
-                            else:
-                                t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
-                                t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
-                                headline = f"{t2['team_name']} won by {random.randint(2, 8)} wickets!"
-                                
-                            for t_curr in [t1, t2]:
-                                for p in t_curr["squad"]:
-                                    p["xp"] += random.randint(15, 45)
-                                    if p["xp"] >= 100:
-                                        if p["rating"] < p["dyn_pot"]: p["rating"] += 1
-                                        p["xp"] = 0
-                                
-                            inn1_bat_list, inn1_bowl_list = [], []
-                            for idx, p in enumerate(t1["playing_11"]):
-                                r = random.randint(35, 85) if idx < 3 else random.randint(0, 35)
-                                b = int(r / 1.3) + 1
-                                inn1_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 2, "6s": 1, "S/R": round((r/b)*100, 2)})
-                                st.session_state.stats_runs[p["name"]] = st.session_state.stats_runs.get(p["name"], 0) + r
-                            for idx, p in enumerate(t2["playing_11"]):
-                                is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
-                                w = random.randint(1, 3) if is_bowl else 0
-                                rc = random.randint(20, 40) if is_bowl else 0
-                                inn1_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
-                                if w > 0: st.session_state.stats_wickets[p["name"]] = st.session_state.stats_wickets.get(p["name"], 0) + w
-
-                            inn2_bat_list, inn2_bowl_list = [], []
-                            inn2_ytb = [p["name"] for p in t2["playing_11"][t2_wickets:]] if t2_wickets < 11 else []
-                            for idx, p in enumerate(t2["playing_11"]):
-                                if idx < t2_wickets:
-                                    r = random.randint(10, 40); b = int(r / 1.2) + 1
-                                    inn2_bat_list.append({"Player": p["name"], "R": r, "B": b, "4s": 1, "6s": 1, "S/R": round((r/b)*100, 2)})
-                                else: inn2_bat_list.append({"Player": p["name"], "R": 0, "B": 0, "4s": 0, "6s": 0, "S/R": "DNB"})
-                            for idx, p in enumerate(t1["playing_11"]):
-                                is_bowl = p["role"] in ["Bowler", "All-Rounder"] or idx >= 6
-                                w = random.randint(1, 2) if is_bowl else 0; rc = random.randint(15, 35) if is_bowl else 0
-                                inn2_bowl_list.append({"Player": p["name"], "Overs": 4.0 if is_bowl else 0.0, "M": 0, "R": rc, "W": w, "Econ": round(rc/4, 2) if is_bowl else 0.0})
-
-                            st.session_state.match_history.append({
-                                "fixture": f"{t1['team_name']} vs {t2['team_name']}", "result": headline, "detailed": True,
-                                "inn1_bat_team": t1["team_name"], "inn1_bowl_team": t2["team_name"], "inn2_bat_team": t2["team_name"], "inn2_bowl_team": t1["team_name"],
-                                "inn1_bat": inn1_bat_list, "inn1_bowl": inn1_bowl_list, "inn1_ytb": [], "inn2_bat": inn2_bat_list, "inn2_bowl": inn2_bowl_list, "inn2_ytb": inn2_ytb
-                            })
-                        trigger_form_roulette()
-                        st.session_state.match_day += 1; st.session_state.current_venue = random.choice(VENUES); st.rerun()
+                st.caption("No batsman data compiled yet.")
+        with col_p:
+            st.markdown("### 🟣 Purple Cap Leaderboard (Top Bowlers)")
+            if st.session_state.stats_wickets:
+                for idx, (name, wck) in enumerate(sorted(st.session_state.stats_wickets.items(), key=lambda x: x[1], reverse=True)[:10]): 
+                    st.write(f"**{idx+1}. {name}** — {wck} wickets claimed")
+            else:
+                st.caption("No bowler data compiled yet.")
