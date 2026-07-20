@@ -265,44 +265,35 @@ for key in ["game_stage", "teams", "auction_index", "current_bid", "highest_bidd
 if "match_day" not in st.session_state: st.session_state.match_day = 1
 if "current_venue" not in st.session_state: st.session_state.current_venue = random.choice(VENUES)
 
+# --- DEFENSIVE DATA MIGRATION OVERLAY (CRASH SHIELD) ---
+if "teams" in st.session_state and isinstance(st.session_state.teams, list):
+    for team in st.session_state.teams:
+        if "manager" not in team:
+            team["manager"] = "Franchise Owner"
+        if "nrr" not in team:
+            team["nrr"] = 0.00
+
 # --- ULTRALUX DARK DESIGN SYSTEM ENGINE ---
 st.markdown("""
     <style>
-    /* Absolute Layout Reset to Match Image Specifications */
     .stApp { background-color: #0b0e14 !important; }
     [data-testid="stSidebar"] { background-color: #11141b !important; border-right: 1px solid #1c202a !important; min-width: 260px !important; }
-    
-    /* Top Main Navbar Badges */
     .top-badge-date { background-color: #16221f !important; border: 1px solid #1b4d3e !important; border-radius: 8px; padding: 8px 16px; color: #52d69b !important; font-weight: 700; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
-    
-    /* Next Day Interactive Button Element */
-    .next-day-btn button { background: #10b981 !important; color: #000000 !important; font-weight: 800 !important; border-radius: 8px !important; border: none !important; padding: 10px 24px !important; font-size: 15px !important; width: 100%; transition: all 0.2s ease; }
+    .next-day-btn decline button, .next-day-btn button { background: #10b981 !important; color: #000000 !important; font-weight: 800 !important; border-radius: 8px !important; border: none !important; padding: 10px 24px !important; font-size: 15px !important; width: 100%; transition: all 0.2s ease; }
     .next-day-btn button:hover { background: #34d399 !important; box-shadow: 0 0 15px rgba(16,185,129,0.4); transform: translateY(-1px); }
-    
-    /* Grid Panel Card Elements */
     .dashboard-panel-card { background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 20px; height: 100%; min-height: 140px; position: relative; }
     .panel-header-text { color: #8892b0 !important; font-size: 13px !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-    
-    /* Team Identity Badge Icon Elements */
     .logo-square-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #ffffff; }
     .opponent-badge-icon { width: 44px; height: 44px; background: #1e3a8a; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #ffffff; }
-    
-    /* Sidebar Navigation Link Elements */
     .sidebar-nav-item { padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; font-weight: 700; font-size: 15px; color: #a0aec0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.15s ease; }
     .sidebar-nav-item:hover { background-color: #1c202a; color: #ffffff; }
     .sidebar-nav-item.active { background-color: #242936; color: #ffffff; border-left: 4px solid #10b981; }
-    
-    /* Headlines Stream Split Cards */
     .headline-stream-card { padding: 14px; border-radius: 8px; background-color: #11141b; border: 1px solid #1c202a; margin-bottom: 8px; cursor: pointer; transition: all 0.2s ease; }
     .headline-stream-card:hover { border-color: #2d3748; background-color: #161b24; }
     .headline-stream-card.active { border-color: #10b981 !important; background-color: #121e1a !important; }
-    
-    /* Metric Typography Layouts */
     .stat-hero-ovr { font-size: 36px; font-weight: 800; color: #ffffff; line-height: 1; }
     .stat-hero-delta-red { color: #f87171 !important; font-weight: 700; font-size: 16px; }
     .stat-hero-delta-green { color: #34d399 !important; font-weight: 700; font-size: 16px; }
-    
-    /* Standard Text Resets */
     h1, h2, h3, h4, h5, p, span, div { font-family: 'Inter', sans-serif !important; }
     </style>
 """, unsafe_allow_html=True)
@@ -348,7 +339,6 @@ if st.session_state.game_stage == "setup":
         st.session_state.auction_index = 0
         st.session_state.timer_seconds = 4
         
-        # Inject standard structural headlines initialization baseline array elements
         st.session_state.match_history.append({
             "type": "WELCOME", "date": "Mar 22, 2026", "headline": "New era begins: Managers take charge of team selections",
             "body": "The front offices are open. Pre-season draft analytics declare massive roster space available for young assets.", "detailed": False
@@ -429,18 +419,18 @@ elif st.session_state.game_stage == "auction":
         )
 
         human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-        if html_button := st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
-            st.session_state.current_bid += 50
-            st.session_state.highest_bidder = human_teams_bidding[0]
-            st.session_state.timer_seconds = 4  
-            st.rerun()
+        if human_teams_bidding:
+            if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
+                st.session_state.current_bid += 50
+                st.session_state.highest_bidder = human_teams_bidding[0]
+                st.session_state.timer_seconds = 4  
+                st.rerun()
 
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
     
     human_squads = [t for t in st.session_state.teams if t["is_human"]]
     
-    # Custom Dynamic Switcher Safe Mapping Lookups
     if "selected_human_idx" not in st.session_state:
         st.session_state.selected_human_idx = 0
         
@@ -458,20 +448,17 @@ elif st.session_state.game_stage == "dashboard":
                     <div class='logo-square-icon'>{team_short}</div>
                     <div>
                         <div style='font-size: 18px; font-weight: 800; color: #ffffff;'>{user_team['team_name']}</div>
-                        <div style='font-size: 13px; color: #718096; font-weight:600;'>{user_team['manager']}</div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600;'>{team.get('manager', 'Franchise Owner')}</div>
                     </div>
                 </div>
                 <br/>
             """, unsafe_allow_html=True)
             
-        # Navigation Link Items Custom Mapping
         tabs_list = ["Home", "Squad", "Schedule", "Table", "Stats"]
         for tab in tabs_list:
             is_active_class = "active" if st.session_state.current_tab == tab else ""
-            if st.markdown(f"<div class='sidebar-nav-item {is_active_class}'>{tab}</div>", unsafe_allow_html=True):
-                pass
+            st.markdown(f"<div class='sidebar-nav-item {is_active_class}'>{tab}</div>", unsafe_allow_html=True)
             
-            # Simple fallback buttons for Streamlit item routing mechanisms
             if st.sidebar.button(f"Go to {tab}", key=f"nav_btn_{tab}", use_container_width=True):
                 st.session_state.current_tab = tab
                 st.rerun()
@@ -497,7 +484,6 @@ elif st.session_state.game_stage == "dashboard":
         st.markdown("<div class='next-day-btn'>", unsafe_allow_html=True)
         if st.button("Next Day >", key="global_next_day_action_trigger"):
             st.session_state.current_tab = "Home"
-            # Auto simulate match day iterations directly 
             boost_role = st.session_state.current_venue["boost_role"]
             boost_amt = st.session_state.current_venue["boost_amount"]
             random.shuffle(st.session_state.teams)
@@ -513,13 +499,15 @@ elif st.session_state.game_stage == "dashboard":
                 if p1 > p2:
                     t1["points"] += 2; t1["wins"] += 1; t1["morale"] = min(100, t1.get("morale", 75) + 8)
                     t2["losses"] += 1; t2["morale"] = max(20, t2.get("morale", 75) - 10)
-                    t1["nrr"] += 0.45; t2["nrr"] -= 0.45
+                    t1["nrr"] = t1.get("nrr", 0.0) + 0.45
+                    t2["nrr"] = t2.get("nrr", 0.0) - 0.45
                     headline = f"{t1['team_name']} chase down {t2['team_name']} smoothly"
                     body_text = f"The chase was completed successfully by the batting order assets. Performance multipliers applied securely."
                 else:
                     t2["points"] += 2; t2["wins"] += 1; t2["morale"] = min(100, t2.get("morale", 75) + 8)
                     t1["losses"] += 1; t1["morale"] = max(20, t1.get("morale", 75) - 10)
-                    t2["nrr"] += 0.52; t1["nrr"] -= 0.52
+                    t2["nrr"] = t2.get("nrr", 0.0) + 0.52
+                    t1["nrr"] = t1.get("nrr", 0.0) - 0.52
                     headline = f"{t2['team_name']} record emphatic win over {t1['team_name']}"
                     body_text = f"Rival line-up elements structured clean defenses and constrained the runs effectively on this surface tier."
                 
@@ -539,13 +527,11 @@ elif st.session_state.game_stage == "dashboard":
     # TAB ROUTING 1: HOME VIEW
     # =========================================================
     if st.session_state.current_tab == "Home":
-        # Render 3 Header Panels matching reference image
         met_col1, met_col2, met_col3 = st.columns(3)
         
         with met_col1:
             st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
             st.markdown("<div class='panel-header-text'>🔮 Next Match</div>", unsafe_allow_html=True)
-            # Locate an active rival target bot team safely
             bot_teams_pool = [t for t in st.session_state.teams if not t["is_human"]]
             next_opp = bot_teams_pool[0]["team_name"] if bot_teams_pool else "Rival Franchise"
             opp_short = next_opp[:3].upper()
@@ -565,17 +551,16 @@ elif st.session_state.game_stage == "dashboard":
             st.markdown("<div class='dashboard-panel-card'>", unsafe_allow_html=True)
             st.markdown("<div class='panel-header-text'>🏆 League Position</div>", unsafe_allow_html=True)
             
-            # Extract standard position metrics mapping dynamically
             sorted_teams = sorted(st.session_state.teams, key=lambda x: x["points"], reverse=True)
             my_pos = sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 9
-            nrr_value = user_team["nrr"] if user_team else 0.00
+            nrr_value = user_team.get("nrr", 0.0) if user_team else 0.00
             nrr_class = "stat-hero-delta-green" if nrr_value >= 0 else "stat-hero-delta-red"
             
             st.markdown(f"""
                 <div style='display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px;'>
                     <div>
                         <div class='stat-hero-ovr'>#{my_pos}</div>
-                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points']} pts accumulated</div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 6px;'>{user_team['points'] if user_team else 0} pts accumulated</div>
                     </div>
                     <div style='text-align: right;'>
                         <div class='{nrr_class}'>{nrr_value:+.2f}</div>
@@ -600,7 +585,7 @@ elif st.session_state.game_stage == "dashboard":
                             <div style='width: 10px; height: 10px; background-color: #10b981; border-radius: 50%;'></div>
                             <div style='width: 10px; height: 10px; background-color: #ef4444; border-radius: 50%;'></div>
                         </div>
-                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 18px;'>Locker Morale: {user_team['morale']}%</div>
+                        <div style='font-size: 13px; color: #718096; font-weight:600; margin-top: 18px;'>Locker Morale: {user_team['morale'] if user_team else 75}%</div>
                     </div>
                     <div style='text-align: right;'>
                         <div style='font-size: 20px; font-weight: 800; color: #10b981;'>{wins_count}W <span style='color:#ef4444;'>- {loss_count}L</span></div>
@@ -611,13 +596,10 @@ elif st.session_state.game_stage == "dashboard":
 
         st.markdown("<br/><h4 style='color: #8892b0; font-size:14px; font-weight:700; text-transform:uppercase;'>📰 Operations Wire & Central Newsroom</h4>", unsafe_allow_html=True)
         
-        # Two-Column Media Wire Layout
         news_stream_col, news_view_col = st.columns([2, 3])
         
         with news_stream_col:
             st.markdown("<div style='max-height: 480px; overflow-y: auto;'>", unsafe_allow_html=True)
-            
-            # Loop through history structures safely
             reversed_history = list(enumerate(st.session_state.match_history))[::-1]
             if not reversed_history:
                 st.caption("No historical briefings indexed.")
