@@ -470,7 +470,6 @@ def generate_detailed_scorecard(batting_team, bowling_team):
             batting_performance.append({"name": b["name"], "status": "DNB", "runs": 0, "balls": 0, "fours": 0, "sixes": 0, "sr": 0.0})
             continue
             
-        # Weighted metric generation base on rating configurations
         ability = b["rating"] + get_form_offset(b["form"])
         balls_faced = random.randint(5, 30)
         if idx < 4: balls_faced = random.randint(15, 45)
@@ -481,7 +480,7 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         for _ in range(balls_faced):
             ball_roll = random.random()
             if ball_roll < (0.04 + (100 - ability)*0.001):
-                break # Wicket out falling pattern
+                break
             elif ball_roll < 0.45: runs_scored += 1
             elif ball_roll < 0.60: runs_scored += 2
             elif ball_roll < 0.75: 
@@ -497,7 +496,6 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         batting_performance.append({"name": b["name"], "status": "Out" if random.random() > 0.3 else "Not Out", "runs": runs_scored, "balls": balls_faced, "fours": fours, "sixes": sixes, "sr": sr})
         if batting_performance[-1]["status"] == "Out": total_wickets += 1
 
-    # Extra runs overlay
     total_runs += random.randint(4, 15)
     
     bowling_performance = []
@@ -626,13 +624,28 @@ elif st.session_state.game_stage == "auction":
             delta=f"Leader: {high_bidder_label}"
         )
 
-        human_teams_bidding = [t for t in st.session_state.teams if t["is_human"] and t["purse"] >= (st.session_state.current_bid + 50)]
-        if human_teams_bidding:
-            if st.button("Raise Bid (+₹50 L)", type="primary", use_container_width=True):
+        # --- MULTI-HUMAN BIDDING SWITCH & ACTION PANEL ---
+        human_teams = [t for t in st.session_state.teams if t["is_human"]]
+        eligible_humans = [t for t in human_teams if t["purse"] >= (st.session_state.current_bid + 50)]
+
+        if eligible_humans:
+            human_options = {f"{t['manager']} ({t['team_name']} - Purse: ₹{t['purse']/100:.2f} CR)": t for t in eligible_humans}
+            
+            selected_human_label = st.radio(
+                "⚡ Select Active Human Bidding Manager:", 
+                options=list(human_options.keys()), 
+                key="active_human_bidder_selector"
+            )
+            
+            active_bidding_team = human_options[selected_human_label]
+
+            if st.button(f"⚡ Raise Bid for {active_bidding_team['manager']} (+₹50 L)", type="primary", use_container_width=True):
                 st.session_state.current_bid += 50
-                st.session_state.highest_bidder = human_teams_bidding[0]
+                st.session_state.highest_bidder = active_bidding_team
                 st.session_state.timer_seconds = 4  
                 st.rerun()
+        else:
+            st.warning("⚠️ None of the human managers have sufficient purse remaining to outbid current offer.")
 
 # --- STAGE 3: INTERACTIVE OPERATIONS HUB ---
 elif st.session_state.game_stage == "dashboard":
@@ -722,7 +735,6 @@ elif st.session_state.game_stage == "dashboard":
 
     st.markdown("<br/>", unsafe_allow_html=True)
 
-    # Wrap dynamic tab content inside animated wrapper for smooth transitions
     st.markdown("<div class='dashboard-transition-wrapper'>", unsafe_allow_html=True)
 
     # =========================================================
@@ -1018,5 +1030,4 @@ elif st.session_state.game_stage == "dashboard":
             else:
                 st.caption("No bowler data compiled yet.")
 
-    # Close transition wrapper
     st.markdown("</div>", unsafe_allow_html=True)
