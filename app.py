@@ -277,28 +277,163 @@ if "teams" in st.session_state and isinstance(st.session_state.teams, list):
         if "wins" not in team: team["wins"] = 0
         if "losses" not in team: team["losses"] = 0
 
-# --- ULTRALUX DARK DESIGN SYSTEM ENGINE ---
+# --- ULTRALUX DARK DESIGN & FLUID ANIMATION SYSTEM ENGINE ---
 st.markdown("""
     <style>
-    .stApp { background-color: #0b0e14 !important; }
-    [data-testid="stSidebar"] { background-color: #11141b !important; border-right: 1px solid #1c202a !important; min-width: 260px !important; }
-    .top-badge-date { background-color: #16221f !important; border: 1px solid #1b4d3e !important; border-radius: 8px; padding: 8px 16px; color: #52d69b !important; font-weight: 700; font-family: 'Inter', sans-serif; display: flex; align-items: center; gap: 8px; }
+    /* Smooth CSS Keyframes for Seamless Screen Transitions */
+    @keyframes fadeInSlide {
+        from {
+            opacity: 0;
+            transform: translateY(8px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .stApp { 
+        background-color: #0b0e14 !important; 
+    }
+
+    /* Wrap Tab Views with Smooth Fade and Motion */
+    .dashboard-transition-wrapper {
+        animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    [data-testid="stSidebar"] { 
+        background-color: #11141b !important; 
+        border-right: 1px solid #1c202a !important; 
+        min-width: 260px !important; 
+    }
+
+    .top-badge-date { 
+        background-color: #16221f !important; 
+        border: 1px solid #1b4d3e !important; 
+        border-radius: 8px; 
+        padding: 8px 16px; 
+        color: #52d69b !important; 
+        font-weight: 700; 
+        font-family: 'Inter', sans-serif; 
+        display: flex; 
+        align-items: center; 
+        gap: 8px; 
+    }
     
-    .sim-match-btn button { background: #1f242e !important; color: #ffffff !important; border: 1px solid #2d3748 !important; font-weight: 700 !important; border-radius: 8px !important; padding: 10px 20px !important; transition: all 0.2s; width:100%; }
-    .sim-match-btn button:hover { background: #2d3748 !important; }
-    .play-match-btn button { background: #10b981 !important; color: #000000 !important; border: none !important; font-weight: 800 !important; border-radius: 8px !important; padding: 10px 24px !important; transition: all 0.2s; width:100%; }
-    .play-match-btn button:hover { background: #34d399 !important; box-shadow: 0 0 15px rgba(16,185,129,0.3); }
+    /* Sleek Smooth Action Buttons */
+    .sim-match-btn button { 
+        background: #1f242e !important; 
+        color: #ffffff !important; 
+        border: 1px solid #2d3748 !important; 
+        font-weight: 700 !important; 
+        border-radius: 8px !important; 
+        padding: 10px 20px !important; 
+        transition: all 0.25s ease !important; 
+        width: 100%; 
+    }
+    .sim-match-btn button:hover { 
+        background: #2d3748 !important; 
+        transform: translateY(-1px);
+    }
     
-    .dashboard-panel-card { background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 20px; height: 100%; min-height: 140px; position: relative; }
-    .panel-header-text { color: #8892b0 !important; font-size: 13px !important; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
-    .logo-square-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #ffffff; }
-    .opponent-badge-icon { width: 44px; height: 44px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #ffffff; }
-    .sidebar-nav-item { padding: 12px 16px; border-radius: 8px; margin-bottom: 4px; font-weight: 700; font-size: 15px; color: #a0aec0; cursor: pointer; display: flex; align-items: center; gap: 12px; transition: all 0.15s ease; }
-    .sidebar-nav-item:hover { background-color: #1c202a; color: #ffffff; }
-    .sidebar-nav-item.active { background-color: #242936; color: #ffffff; border-left: 4px solid #10b981; }
-    .headline-stream-card { padding: 14px; border-radius: 8px; background-color: #11141b; border: 1px solid #1c202a; margin-bottom: 8px; cursor: pointer; transition: all 0.2s ease; }
-    .headline-stream-card:hover { border-color: #2d3748; background-color: #161b24; }
-    .headline-stream-card.active { border-color: #10b981 !important; background-color: #121e1a !important; }
+    .play-match-btn button { 
+        background: #10b981 !important; 
+        color: #000000 !important; 
+        border: none !important; 
+        font-weight: 800 !important; 
+        border-radius: 8px !important; 
+        padding: 10px 24px !important; 
+        transition: all 0.25s ease !important; 
+        width: 100%; 
+    }
+    .play-match-btn button:hover { 
+        background: #34d399 !important; 
+        box-shadow: 0 4px 15px rgba(16,185,129,0.35); 
+        transform: translateY(-1px);
+    }
+    
+    /* Animated Dashboard Panel Cards */
+    .dashboard-panel-card { 
+        background-color: #11141b; 
+        border: 1px solid #1c202a; 
+        border-radius: 12px; 
+        padding: 20px; 
+        height: 100%; 
+        min-height: 140px; 
+        position: relative; 
+        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+    .dashboard-panel-card:hover {
+        transform: translateY(-2px);
+        border-color: #2b3245;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+
+    .panel-header-text { 
+        color: #8892b0 !important; 
+        font-size: 13px !important; 
+        font-weight: 600; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px; 
+        margin-bottom: 12px; 
+    }
+
+    .logo-square-icon { 
+        width: 50px; 
+        height: 50px; 
+        background: linear-gradient(135deg, #ea580c, #f97316); 
+        border-radius: 10px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-weight: 800; 
+        font-size: 18px; 
+        color: #ffffff; 
+    }
+    .opponent-badge-icon { 
+        width: 44px; 
+        height: 44px; 
+        background: #ea580c; 
+        border-radius: 8px; 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        font-weight: 700; 
+        font-size: 15px; 
+        color: #ffffff; 
+    }
+    
+    /* Interactive Sidebar Dynamic Buttons */
+    div[data-testid="stSidebar"] button {
+        transition: all 0.2s ease-in-out !important;
+        border-radius: 8px !important;
+        font-weight: 700 !important;
+    }
+    div[data-testid="stSidebar"] button:hover {
+        background-color: #1c202a !important;
+        color: #10b981 !important;
+        transform: scale(1.02);
+    }
+
+    .headline-stream-card { 
+        padding: 14px; 
+        border-radius: 8px; 
+        background-color: #11141b; 
+        border: 1px solid #1c202a; 
+        margin-bottom: 8px; 
+        cursor: pointer; 
+        transition: all 0.2s ease; 
+    }
+    .headline-stream-card:hover { 
+        border-color: #2d3748; 
+        background-color: #161b24; 
+        transform: translateX(3px);
+    }
+    .headline-stream-card.active { 
+        border-color: #10b981 !important; 
+        background-color: #121e1a !important; 
+    }
+
     .stat-hero-ovr { font-size: 36px; font-weight: 800; color: #ffffff; line-height: 1; }
     .stat-hero-delta-red { color: #f87171 !important; font-weight: 700; font-size: 16px; }
     .stat-hero-delta-green { color: #34d399 !important; font-weight: 700; font-size: 16px; }
@@ -552,7 +687,6 @@ elif st.session_state.game_stage == "dashboard":
     with top_col_mid:
         st.markdown("<div class='sim-match-btn'>", unsafe_allow_html=True)
         if st.button("⏩ Sim Match", key="global_sim_match_action"):
-            # Instant backend execution bypass
             bot_teams_pool = [t for t in st.session_state.teams if t["team_name"] != user_team["team_name"]]
             opponent = bot_teams_pool[0]
             sc1 = generate_detailed_scorecard(user_team, opponent)
@@ -577,7 +711,6 @@ elif st.session_state.game_stage == "dashboard":
     with top_col_right:
         st.markdown("<div class='play-match-btn'>", unsafe_allow_html=True)
         if st.button("▷ Play Match", key="global_play_match_action"):
-            # Set the engine state machine active!
             st.session_state.current_tab = "Match Engine"
             st.session_state.active_match_engine = {
                 "state": "toss_phase",
@@ -588,6 +721,9 @@ elif st.session_state.game_stage == "dashboard":
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<br/>", unsafe_allow_html=True)
+
+    # Wrap dynamic tab content inside animated wrapper for smooth transitions
+    st.markdown("<div class='dashboard-transition-wrapper'>", unsafe_allow_html=True)
 
     # =========================================================
     # TAB ROUTING 1: LIVE INTERACTIVE MATCH ENGINE BLOCK
@@ -626,7 +762,6 @@ elif st.session_state.game_stage == "dashboard":
             st.info(f"🪙 Toss Winner: **{engine['toss_winner']}** | Choice Vector: **{engine['toss_decision']}**")
             
             if st.button("⚡ Execute Live Complete Match Simulation Runs", type="primary", use_container_width=True):
-                # Run the score architecture generator engines
                 if engine["toss_decision"] == "Bat First" and engine["toss_winner"] == user_team["team_name"]:
                     sc1 = generate_detailed_scorecard(user_team, opp_team)
                     sc2 = generate_detailed_scorecard(opp_team, user_team)
@@ -648,10 +783,8 @@ elif st.session_state.game_stage == "dashboard":
             
             st.success("🏁 Match Concluded successfully!")
             
-            # Write points tables logic metrics updates safely
             if st.button("💾 Finalize Results & Return to Newsroom Hub", use_container_width=True):
                 if sc1["runs"] > sc2["runs"]:
-                    # logic assignments
                     user_team["points"] += 2; user_team["wins"] += 1; opp_team["losses"] += 1
                     hl = f"{user_team['team_name']} down {opp_team['team_name']} in interactive spectacular setup"
                 else:
@@ -666,7 +799,6 @@ elif st.session_state.game_stage == "dashboard":
                 st.session_state.current_tab = "Home"
                 st.rerun()
                 
-            # --- DETAILED PREMIUM DIGITAL SCORECARD RENDER VIEW ---
             st.markdown("### 📊 Interactive Live Scorecard Viewport")
             t1, t2 = st.tabs([f"Innings 1 Overview", f"Innings 2 Overview"])
             
@@ -885,4 +1017,6 @@ elif st.session_state.game_stage == "dashboard":
                     st.write(f"**{idx+1}. {name}** — {wck} wickets")
             else:
                 st.caption("No bowler data compiled yet.")
-                
+
+    # Close transition wrapper
+    st.markdown("</div>", unsafe_allow_html=True)
