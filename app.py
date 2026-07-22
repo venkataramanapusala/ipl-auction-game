@@ -9,9 +9,9 @@ st.set_page_config(page_title="IPL Pro-Manager Simulation Console", page_icon="ð
 
 # --- DATA POOLS ---
 TEAM_NAMES_POOL = [
-    "Mumbai Mavericks", "Chennai Kings", "Bangalore Blasters", 
-    "Delhi Dynamos", "Kolkata Knights", "Gujarat Giants", 
-    "Punjab Panthers", "Rajasthan Royals", "Lucknow Lions", "Hyderabad Heroes"
+    "Mumbai Indians ", "Chennai Super Kings", "Royal Chalengers Bangalore ", 
+    "Delhi Capitals ", "Kolkata Knights", "Gujarat Titans  ", 
+    "Punjab Kings", "Rajasthan Royals", "Lucknow Super Giants", "Sunrisers Hyderabad"
 ]
 
 BOT_PERSONALITIES = ["Batting-Heavy", "Bowling-Heavy", "Youth-Focus", "Balanced"]
@@ -27,10 +27,11 @@ VENUES = [
 if "player_pool" not in st.session_state:
     raw_pool = [
         # === PURE BATSMEN (1 - 60) ===
-        {"name": "Virat Kohli", "role": "Batsman", "rating": 94, "base_price": 200, "age": 35},
+        {"name": "Virat Kohli", "role": "Batsman", "rating": 96, "base_price": 200, "age": 35},
         {"name": "Suryakumar Yadav", "role": "Batsman", "rating": 93, "base_price": 150, "age": 33},
-        {"name": "Rohit Sharma", "role": "Batsman", "rating": 91, "base_price": 200, "age": 36},
+        {"name": "Rohit Sharma", "role": "Batsman", "rating": 95, "base_price": 200, "age": 36},
         {"name": "Travis Head", "role": "Batsman", "rating": 92, "base_price": 150, "age": 30},
+        {"name": "Vaibhav Sooryavanshi ", "role": "Batsman", "rating": 94, "base_price": 150, "age": 15},
         {"name": "Shubman Gill", "role": "Batsman", "rating": 89, "base_price": 100, "age": 24},
         {"name": "Yashasvi Jaiswal", "role": "Batsman", "rating": 90, "base_price": 100, "age": 22},
         {"name": "Ruturaj Gaikwad", "role": "Batsman", "rating": 88, "base_price": 100, "age": 27},
