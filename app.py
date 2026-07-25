@@ -362,29 +362,287 @@ def generate_double_round_robin_schedule(teams):
     return schedule + second_leg
 
 
-# --- ULTRALUX DARK DESIGN & FLUID ANIMATION SYSTEM ENGINE ---
+# --- BROADCAST-GRADE VISUAL SYSTEM ---
 st.markdown(
     """
     <style>
+    @import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+
+    :root {
+        --bg: #070b12;
+        --surface: #10151f;
+        --surface-2: #161d2b;
+        --border: #232c3d;
+        --text: #eef2f8;
+        --text-dim: #8a97ab;
+        --pitch: #22c55e;
+        --pitch-glow: rgba(34, 197, 94, 0.35);
+        --gold: #f2b705;
+        --gold-glow: rgba(242, 183, 5, 0.35);
+        --danger: #ef4444;
+        --info: #38bdf8;
+    }
+
     @keyframes fadeInSlide {
         from { opacity: 0; transform: translateY(8px); }
         to { opacity: 1; transform: translateY(0); }
     }
-    .stApp { background-color: #0b0e14 !important; }
+    @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 0px var(--gold-glow); }
+        50% { box-shadow: 0 0 18px var(--gold-glow); }
+    }
+
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+
+    .stApp {
+        background:
+            radial-gradient(circle at 12% -10%, rgba(34,197,94,0.10), transparent 40%),
+            radial-gradient(circle at 88% 0%, rgba(242,183,5,0.08), transparent 35%),
+            var(--bg) !important;
+        color: var(--text);
+    }
+
     .dashboard-transition-wrapper { animation: fadeInSlide 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
-    [data-testid="stSidebar"] { background-color: #11141b !important; border-right: 1px solid #1c202a !important; min-width: 260px !important; }
-    .top-badge-date { background-color: #16221f !important; border: 1px solid #1b4d3e !important; border-radius: 8px; padding: 8px 16px; color: #52d69b !important; font-weight: 700; font-family: 'Inter', sans-serif; }
-    .sim-match-btn button { background: #1f242e !important; color: #ffffff !important; border: 1px solid #2d3748 !important; font-weight: 700 !important; border-radius: 8px !important; padding: 10px 20px !important; width: 100%; }
-    .play-match-btn button { background: #10b981 !important; color: #000000 !important; border: none !important; font-weight: 800 !important; border-radius: 8px !important; padding: 10px 24px !important; width: 100%; }
-    .dashboard-panel-card { background-color: #11141b; border: 1px solid #1c202a; border-radius: 12px; padding: 20px; min-height: 140px; }
-    .panel-header-text { color: #8892b0 !important; font-size: 13px !important; font-weight: 600; text-transform: uppercase; margin-bottom: 12px; }
-    .logo-square-icon { width: 50px; height: 50px; background: linear-gradient(135deg, #ea580c, #f97316); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 18px; color: #ffffff; }
-    .opponent-badge-icon { width: 44px; height: 44px; background: #ea580c; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #ffffff; }
-    .headline-stream-card { padding: 14px; border-radius: 8px; background-color: #11141b; border: 1px solid #1c202a; margin-bottom: 8px; }
-    .headline-stream-card.active { border-color: #10b981 !important; background-color: #121e1a !important; }
-    .stat-hero-ovr { font-size: 36px; font-weight: 800; color: #ffffff; }
-    .stat-hero-delta-red { color: #f87171 !important; font-weight: 700; font-size: 16px; }
-    .stat-hero-delta-green { color: #34d399 !important; font-weight: 700; font-size: 16px; }
+
+    /* Headings — condensed scoreboard type */
+    h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+        font-family: 'Oswald', sans-serif !important;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text) !important;
+    }
+    h1 { border-left: 4px solid var(--pitch); padding-left: 12px; }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: var(--surface) !important;
+        border-right: 1px solid var(--border) !important;
+        min-width: 260px !important;
+    }
+    [data-testid="stSidebar"] h3 {
+        color: var(--gold) !important;
+    }
+
+    /* Buttons */
+    .stButton button, .stDownloadButton button {
+        font-family: 'Inter', sans-serif !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-size: 13px !important;
+        border-radius: 8px !important;
+        border: 1px solid var(--border) !important;
+        background: var(--surface-2) !important;
+        color: var(--text) !important;
+        padding: 10px 18px !important;
+        transition: all 0.15s ease-in-out;
+    }
+    .stButton button:hover {
+        border-color: var(--pitch) !important;
+        color: var(--pitch) !important;
+        transform: translateY(-1px);
+    }
+    button[kind="primary"], .stButton button[kind="primary"] {
+        background: linear-gradient(135deg, var(--pitch), #16a34a) !important;
+        color: #06210f !important;
+        border: none !important;
+        animation: pulseGlow 2.4s infinite;
+    }
+    button[kind="primary"]:hover {
+        filter: brightness(1.08);
+        color: #06210f !important;
+    }
+
+    /* Metrics (used for bid status + scorecards) */
+    [data-testid="stMetric"] {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px 18px;
+    }
+    [data-testid="stMetricValue"] {
+        font-family: 'JetBrains Mono', monospace !important;
+        color: var(--gold) !important;
+        font-weight: 700 !important;
+    }
+    [data-testid="stMetricDelta"] {
+        font-family: 'Inter', sans-serif !important;
+    }
+
+    /* Progress bar = auction countdown */
+    [data-testid="stProgress"] > div > div {
+        background: linear-gradient(90deg, var(--danger), var(--gold), var(--pitch)) !important;
+    }
+
+    /* Tables / dataframes */
+    [data-testid="stDataFrame"], [data-testid="stTable"] {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+
+    /* Expanders (Schedule tab) */
+    [data-testid="stExpander"] {
+        background: var(--surface);
+        border: 1px solid var(--border) !important;
+        border-radius: 10px;
+    }
+
+    /* Tabs (Match Engine innings) */
+    [data-baseweb="tab-list"] {
+        gap: 6px;
+        border-bottom: 1px solid var(--border) !important;
+    }
+    [data-baseweb="tab"] {
+        font-family: 'Oswald', sans-serif !important;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        color: var(--text-dim) !important;
+    }
+    [aria-selected="true"][data-baseweb="tab"] {
+        color: var(--pitch) !important;
+    }
+
+    /* Multiselect / selectbox chips (Playing XI picker) */
+    [data-baseweb="tag"] {
+        background: var(--pitch) !important;
+        color: #06210f !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+    }
+
+    /* ---- Custom components ---- */
+    .scoreboard-strip {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: linear-gradient(90deg, var(--surface), var(--surface-2));
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--gold);
+        border-radius: 10px;
+        padding: 12px 20px;
+        margin-bottom: 18px;
+    }
+    .scoreboard-strip .sb-label {
+        font-family: 'Oswald', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-dim);
+        font-size: 12px;
+    }
+    .scoreboard-strip .sb-value {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--gold);
+        font-size: 20px;
+        font-weight: 700;
+    }
+
+    .team-crest {
+        width: 52px; height: 52px;
+        background: linear-gradient(135deg, var(--pitch), #0f7a3d);
+        border-radius: 10px;
+        display: flex; align-items: center; justify-content: center;
+        font-family: 'Oswald', sans-serif;
+        font-weight: 700; font-size: 18px; color: #06210f;
+        box-shadow: 0 0 14px var(--pitch-glow);
+    }
+
+    .stat-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px 20px;
+        min-height: 110px;
+    }
+    .stat-card .stat-label {
+        font-family: 'Oswald', sans-serif;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--text-dim);
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+    .stat-card .stat-value {
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .stat-card .stat-value.gold { color: var(--gold); }
+    .stat-card .stat-value.pitch { color: var(--pitch); }
+
+    .pill {
+        display: inline-block;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+        padding: 2px 9px;
+        border-radius: 999px;
+        margin-left: 8px;
+    }
+    .pill-xi { background: var(--pitch-glow); color: var(--pitch); border: 1px solid var(--pitch); }
+    .pill-impact { background: var(--gold-glow); color: var(--gold); border: 1px solid var(--gold); }
+
+    .player-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 14px;
+        margin-bottom: 6px;
+    }
+    .player-row .p-name { font-weight: 600; color: var(--text); }
+    .player-row .p-role { color: var(--text-dim); font-size: 12px; margin-left: 6px; }
+    .player-row .p-ratings {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-dim);
+        font-size: 13px;
+    }
+
+    .auction-card {
+        background: linear-gradient(160deg, var(--surface), var(--surface-2));
+        border: 1px solid var(--border);
+        border-top: 3px solid var(--gold);
+        border-radius: 12px;
+        padding: 20px 22px;
+        margin-bottom: 14px;
+    }
+    .auction-card .a-name {
+        font-family: 'Oswald', sans-serif;
+        font-size: 24px;
+        text-transform: uppercase;
+        color: var(--text);
+    }
+    .auction-card .a-meta {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-dim);
+        font-size: 14px;
+        margin-top: 4px;
+    }
+
+    .headline-card {
+        padding: 12px 14px;
+        border-radius: 8px;
+        background-color: var(--surface);
+        border: 1px solid var(--border);
+        border-left: 3px solid var(--info);
+        margin-bottom: 8px;
+    }
+    .headline-card .h-date {
+        font-family: 'JetBrains Mono', monospace;
+        color: var(--text-dim);
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+    .headline-card .h-title {
+        font-weight: 600;
+        color: var(--text);
+        margin-top: 2px;
+    }
     </style>
 """,
     unsafe_allow_html=True,
@@ -740,9 +998,16 @@ elif st.session_state.game_stage == "auction":
 
         st.progress(st.session_state.timer_seconds / 4)
         st.markdown(
-            f"**🏃 Active Asset:** {player['name']} | **🏏 Batting:**"
-            f" {player['batting_rating']} | **🎯 Bowling:**"
-            f" {player['bowling_rating']} | **📅 Age:** {player['age']}"
+            f"""<div class="auction-card">
+                <div class="a-name">🏃 {player['name']}</div>
+                <div class="a-meta">
+                    ROLE {player['role'].upper()} &nbsp;·&nbsp;
+                    BAT {player['batting_rating']} &nbsp;·&nbsp;
+                    BOWL {player['bowling_rating']} &nbsp;·&nbsp;
+                    AGE {player['age']}
+                </div>
+            </div>""",
+            unsafe_allow_html=True,
         )
 
         high_bidder_label = (
@@ -848,8 +1113,26 @@ elif st.session_state.game_stage == "dashboard":
                 st.rerun()
 
         if user_team:
-            st.markdown(f"### 🛡️ {user_team['team_name']}")
-            st.caption(f"Manager: {user_team.get('manager', 'Franchise Owner')}")
+            crest_initials = "".join(
+                w[0] for w in user_team["team_name"].split()[:2]
+            ).upper()
+            st.markdown(
+                f"""
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+                    <div class="team-crest">{crest_initials}</div>
+                    <div>
+                        <div style="font-family:'Oswald',sans-serif;text-transform:uppercase;
+                             letter-spacing:0.03em;color:var(--text);font-size:15px;line-height:1.2;">
+                             {user_team['team_name']}
+                        </div>
+                        <div style="color:var(--text-dim);font-size:12px;">
+                             Manager: {user_team.get('manager', 'Franchise Owner')}
+                        </div>
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
 
         for tab in ["Home", "Squad", "Schedule", "Table", "Stats"]:
             if st.sidebar.button(tab, key=f"nav_btn_{tab}", use_container_width=True):
@@ -861,12 +1144,29 @@ elif st.session_state.game_stage == "dashboard":
                 }
                 st.rerun()
 
+    st.markdown(
+        f"""
+        <div class="scoreboard-strip">
+            <div>
+                <div class="sb-label">Matchday</div>
+                <div class="sb-value">{st.session_state.match_day} / {len(st.session_state.tournament_schedule)}</div>
+            </div>
+            <div>
+                <div class="sb-label">Format</div>
+                <div class="sb-value" style="color:var(--pitch);font-size:15px;">Double Round-Robin</div>
+            </div>
+            <div>
+                <div class="sb-label">Venue</div>
+                <div class="sb-value" style="color:var(--info);font-size:15px;">{st.session_state.current_venue['short']}</div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     top_col_left, top_col_mid, top_col_right = st.columns([3, 1, 1])
     with top_col_left:
         st.markdown(
-            f"📅 **Matchday {st.session_state.match_day} /"
-            f" {len(st.session_state.tournament_schedule)}** | Double Round-Robin"
-            " League"
+            f"🆚 **{user_team['team_name']}** vs **{opponent_team['team_name']}**"
         )
     with top_col_mid:
         if st.button("⏩ Sim Match", key="global_sim_match_action"):
@@ -908,7 +1208,7 @@ elif st.session_state.game_stage == "dashboard":
             st.session_state.match_day += 1
             st.rerun()
     with top_col_right:
-        if st.button("▷ Play Match", key="global_play_match_action"):
+        if st.button("▷ Play Match", key="global_play_match_action", type="primary"):
             st.session_state.current_tab = "Match Engine"
             st.session_state.active_match_engine = {
                 "state": "toss_phase",
@@ -1034,23 +1334,50 @@ elif st.session_state.game_stage == "dashboard":
                 st.dataframe(pd.DataFrame(sc2["bowling"]), use_container_width=True)
 
     elif st.session_state.current_tab == "Home":
+        sorted_teams = sorted(
+            st.session_state.teams, key=lambda x: x["points"], reverse=True
+        )
+        my_pos = (
+            sorted_teams.index(user_team) + 1 if user_team in sorted_teams else 1
+        )
+
         met_col1, met_col2, met_col3 = st.columns(3)
         with met_col1:
-            st.markdown(f"### 🔮 Next Match\n**vs {opponent_team['team_name']}**")
+            st.markdown(
+                f"""<div class="stat-card">
+                    <div class="stat-label">🔮 Next Match</div>
+                    <div class="stat-value">vs {opponent_team['team_name']}</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
         with met_col2:
-            sorted_teams = sorted(
-                st.session_state.teams, key=lambda x: x["points"], reverse=True
+            st.markdown(
+                f"""<div class="stat-card">
+                    <div class="stat-label">🏆 League Position</div>
+                    <div class="stat-value gold">#{my_pos}</div>
+                    <div style="color:var(--text-dim);font-size:13px;margin-top:2px;">{user_team['points']} pts</div>
+                </div>""",
+                unsafe_allow_html=True,
             )
-            my_pos = (
-                sorted_teams.index(user_team) + 1
-                if user_team in sorted_teams
-                else 1
-            )
-            st.markdown(f"### 🏆 Position\n**#{my_pos}** ({user_team['points']} pts)")
         with met_col3:
             st.markdown(
-                f"### 📈 Record\n**{user_team['wins']}W - {user_team['losses']}L**"
+                f"""<div class="stat-card">
+                    <div class="stat-label">📈 Season Record</div>
+                    <div class="stat-value pitch">{user_team['wins']}W – {user_team['losses']}L</div>
+                </div>""",
+                unsafe_allow_html=True,
             )
+
+        if st.session_state.match_history:
+            st.markdown("### 📰 Latest Headlines")
+            for entry in reversed(st.session_state.match_history[-5:]):
+                st.markdown(
+                    f"""<div class="headline-card">
+                        <div class="h-date">{entry.get('date', '')} · {entry.get('type', '')}</div>
+                        <div class="h-title">{entry.get('headline', '')}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
     elif st.session_state.current_tab == "Squad":
         st.subheader(f"👥 Squad Management: {user_team['team_name']}")
@@ -1121,13 +1448,21 @@ elif st.session_state.game_stage == "dashboard":
         st.markdown("---")
         st.markdown("### 📋 Full Squad")
         for p in squad:
-            tag = (
-                " 🟢 XI" if p["name"] in selected_names
-                else (" 🔁 Impact" if p["name"] == selected_impact else "")
-            )
-            st.write(
-                f"**{p['name']}**{tag} ({p['role']}) | 🏏 Bat Rating:"
-                f" {p['batting_rating']} | 🎯 Bowl Rating: {p['bowling_rating']}"
+            if p["name"] in selected_names:
+                tag = '<span class="pill pill-xi">XI</span>'
+            elif p["name"] == selected_impact:
+                tag = '<span class="pill pill-impact">Impact</span>'
+            else:
+                tag = ""
+            st.markdown(
+                f"""<div class="player-row">
+                    <div>
+                        <span class="p-name">{p['name']}</span>{tag}
+                        <span class="p-role">{p['role']}</span>
+                    </div>
+                    <div class="p-ratings">BAT {p['batting_rating']} · BOWL {p['bowling_rating']}</div>
+                </div>""",
+                unsafe_allow_html=True,
             )
 
     elif st.session_state.current_tab == "Schedule":
