@@ -1054,9 +1054,79 @@ elif st.session_state.game_stage == "dashboard":
 
     elif st.session_state.current_tab == "Squad":
         st.subheader(f"👥 Squad Management: {user_team['team_name']}")
-        for p in user_team["squad"]:
+
+        squad = user_team["squad"]
+        name_to_player = {p["name"]: p for p in squad}
+
+        def _label(p):
+            return (
+                f"{p['name']} ({p['role']}) | Bat {p['batting_rating']} /"
+                f" Bowl {p['bowling_rating']}"
+            )
+
+        current_xi_names = [
+            p["name"] for p in user_team.get("playing_11", []) if p["name"] in name_to_player
+        ]
+        current_impact_name = (
+            user_team["impact_player"]["name"]
+            if user_team.get("impact_player")
+            and user_team["impact_player"]["name"] in name_to_player
+            else None
+        )
+
+        st.markdown("### 🏏 Set Your Playing XI")
+        st.caption(
+            "Pick exactly 11 players to start the next match. The 12th player"
+            " (Impact Player) is chosen separately below."
+        )
+
+        selected_names = st.multiselect(
+            "Playing XI",
+            options=list(name_to_player.keys()),
+            default=current_xi_names,
+            format_func=lambda n: _label(name_to_player[n]),
+            key="playing_xi_multiselect",
+        )
+
+        remaining_count = 11 - len(selected_names)
+        if remaining_count > 0:
+            st.warning(f"Select {remaining_count} more player(s) to complete your XI.")
+        elif remaining_count < 0:
+            st.error(f"Remove {-remaining_count} player(s) — only 11 allowed.")
+        else:
+            st.success("✅ 11 players selected.")
+
+        bench_names = [n for n in name_to_player if n not in selected_names]
+        impact_options = ["(None)"] + bench_names
+        impact_default = (
+            current_impact_name if current_impact_name in bench_names else "(None)"
+        )
+        selected_impact = st.selectbox(
+            "🔁 Impact Player (12th man, chosen from the bench)",
+            options=impact_options,
+            index=impact_options.index(impact_default),
+            format_func=lambda n: "(None)" if n == "(None)" else _label(name_to_player[n]),
+            key="impact_player_select",
+        )
+
+        if st.button(
+            "💾 Save Playing XI", type="primary", disabled=(remaining_count != 0)
+        ):
+            user_team["playing_11"] = [name_to_player[n] for n in selected_names]
+            user_team["impact_player"] = (
+                name_to_player[selected_impact] if selected_impact != "(None)" else None
+            )
+            st.success("Playing XI saved for the next match!")
+
+        st.markdown("---")
+        st.markdown("### 📋 Full Squad")
+        for p in squad:
+            tag = (
+                " 🟢 XI" if p["name"] in selected_names
+                else (" 🔁 Impact" if p["name"] == selected_impact else "")
+            )
             st.write(
-                f"**{p['name']}** ({p['role']}) | 🏏 Bat Rating:"
+                f"**{p['name']}**{tag} ({p['role']}) | 🏏 Bat Rating:"
                 f" {p['batting_rating']} | 🎯 Bowl Rating: {p['bowling_rating']}"
             )
 
