@@ -1,4 +1,5 @@
 import random
+import json
 import pandas as pd
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
@@ -332,6 +333,14 @@ if "match_day" not in st.session_state:
     st.session_state.match_day = 1
 if "current_venue" not in st.session_state:
     st.session_state.current_venue = random.choice(VENUES)
+if "playoffs" not in st.session_state:
+    st.session_state.playoffs = {"stage": None, "seeds": [], "log": [], "champion": None}
+if "unsold_pool" not in st.session_state:
+    st.session_state.unsold_pool = []
+if "bg_simulated_day" not in st.session_state:
+    st.session_state.bg_simulated_day = None
+if "selected_human_idx" not in st.session_state:
+    st.session_state.selected_human_idx = 0
 
 
 # --- GENERATE DOUBLE ROUND-ROBIN FIXTURES ---
@@ -655,7 +664,12 @@ def get_form_offset(form_string):
 
 
 # --- SIMULATOR MATRIX USING BAT / BOWL DUAL RATINGS ---
-def generate_detailed_scorecard(batting_team, bowling_team):
+def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
+    if venue is None:
+        venue = st.session_state.get("current_venue")
+    boost_role = venue.get("boost_role") if venue else None
+    boost_amount = venue.get("boost_amount", 0) if venue else 0
+
     batters = (
         batting_team["playing_11"]
         if len(batting_team["playing_11"]) == 11
@@ -677,6 +691,7 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         bowlers = bowlers[:5]
 
     batting_performance = []
+    commentary = []
     total_runs = 0
     total_wickets = 0
     balls_tracked = 0
@@ -695,6 +710,8 @@ def generate_detailed_scorecard(batting_team, bowling_team):
             continue
 
         ability = b["batting_rating"] + get_form_offset(b.get("form", "Steady"))
+        if boost_role in (b.get("role"), "Balanced") and boost_role == b.get("role"):
+            ability += boost_amount
         balls_faced = (
             random.randint(3, 25) if ability < 50 else random.randint(10, 35)
         )
@@ -709,6 +726,7 @@ def generate_detailed_scorecard(batting_team, bowling_team):
             ball_roll = random.random()
             if ball_roll < (0.05 + (100 - ability) * 0.0015):
                 got_out = True
+                commentary.append(f"🔴 OUT! {b['name']} departs for {runs_scored}")
                 break  # Wicket
             elif ball_roll < 0.45:
                 runs_scored += 1
@@ -717,9 +735,11 @@ def generate_detailed_scorecard(batting_team, bowling_team):
             elif ball_roll < 0.75:
                 runs_scored += 4
                 fours += 1
+                commentary.append(f"🔵 FOUR! {b['name']} finds the gap")
             elif ball_roll < 0.85:
                 runs_scored += 6
                 sixes += 1
+                commentary.append(f"🟣 SIX! {b['name']} launches it into the stands")
 
         total_runs += runs_scored
         balls_tracked += balls_faced
@@ -740,6 +760,16 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         if batting_performance[-1]["status"] == "Out":
             total_wickets += 1
 
+        # Evolve batting form based on this innings
+        if got_out and runs_scored < 10:
+            b["form"] = "Slumping"
+        elif runs_scored >= 50:
+            b["form"] = "Red-Hot"
+        elif runs_scored >= 25:
+            b["form"] = "Good"
+        else:
+            b["form"] = "Steady"
+
     total_runs += random.randint(4, 15)
 
     bowling_performance = []
@@ -749,6 +779,9 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         runs_conceded = random.randint(18, 45) - int(
             (bwl["bowling_rating"] - 75) * 0.35
         )
+        runs_conceded -= get_form_offset(bwl.get("form", "Steady"))
+        if boost_role == bwl.get("role"):
+            runs_conceded -= boost_amount
         runs_conceded = max(12, runs_conceded)
         wkt = 0
         if wickets_remaining > 0:
@@ -765,6 +798,36 @@ def generate_detailed_scorecard(batting_team, bowling_team):
             "wickets": wkt,
             "econ": round(runs_conceded / overs, 2),
         })
+        if wkt > 0:
+            commentary.append(f"🟢 {bwl['name']} strikes! {wkt}-wicket over")
+
+        # Evolve bowling form based on this spell
+        if wkt >= 3:
+            bwl["form"] = "Red-Hot"
+        elif wkt == 2:
+            bwl["form"] = "Good"
+        elif wkt == 0 and runs_conceded > 34:
+            bwl["form"] = "Slumping"
+        else:
+            bwl["form"] = "Steady"
+
+    # Player of the Innings: best combined batting/bowling performance
+    potm_candidates = []
+    for bp in batting_performance:
+        if bp["status"] != "DNB":
+            score = bp["runs"] + bp["fours"] * 1 + bp["sixes"] * 2
+            potm_candidates.append((score, bp["name"], f"{bp['runs']} ({bp['balls']})"))
+    for bwlp in bowling_performance:
+        score = bwlp["wickets"] * 25 - bwlp["runs"] * 0.5
+        potm_candidates.append(
+            (score, bwlp["name"], f"{bwlp['wickets']}/{bwlp['runs']}")
+        )
+    potm_candidates.sort(key=lambda x: x[0], reverse=True)
+    top_performer = (
+        {"name": potm_candidates[0][1], "line": potm_candidates[0][2]}
+        if potm_candidates
+        else None
+    )
 
     return {
         "runs": total_runs,
@@ -772,6 +835,8 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         "overs": round(min(120, balls_tracked) / 6, 1),
         "batting": batting_performance,
         "bowling": bowling_performance,
+        "commentary": commentary,
+        "top_performer": top_performer,
     }
 
 
@@ -810,6 +875,51 @@ def simulate_league_background_matches(user_team_name, opp_team_name):
             t1["losses"] += 1
 
     st.session_state.bg_simulated_day = st.session_state.match_day
+
+
+SAVE_STATE_KEYS = [
+    "game_stage", "teams", "player_pool", "auction_index", "current_bid",
+    "highest_bidder", "match_history", "stats_runs", "stats_wickets",
+    "current_tab", "active_match_engine", "tournament_schedule", "match_day",
+    "current_venue", "bg_simulated_day", "playoffs", "unsold_pool",
+    "selected_human_idx", "timer_seconds",
+]
+
+
+def _export_season_json():
+    data = {k: st.session_state[k] for k in SAVE_STATE_KEYS if k in st.session_state}
+    return json.dumps(data, default=str, indent=2)
+
+
+def _import_season_json(raw_text):
+    data = json.loads(raw_text)
+    for k, v in data.items():
+        st.session_state[k] = v
+
+
+with st.sidebar:
+    st.markdown("#### 💾 Save / Load Season")
+    if st.session_state.get("game_stage") in ("auction", "dashboard"):
+        st.download_button(
+            "⬇️ Export Season",
+            data=_export_season_json(),
+            file_name="ipl_season_save.json",
+            mime="application/json",
+            use_container_width=True,
+            key="export_season_btn",
+        )
+    uploaded_save = st.file_uploader(
+        "Import a save file", type="json", key="season_import_uploader"
+    )
+    if uploaded_save is not None:
+        if st.button("📂 Load Uploaded Season", use_container_width=True, key="load_season_btn"):
+            try:
+                _import_season_json(uploaded_save.read().decode("utf-8"))
+                st.success("Season loaded! Reloading...")
+                st.rerun()
+            except Exception as e:
+                st.error(f"Couldn't load save file: {e}")
+    st.markdown("---")
 
 
 # --- STAGE 1: SETUP ---
@@ -948,6 +1058,8 @@ elif st.session_state.game_stage == "auction":
                         t["purse"] -= curr_p["base_price"]
                         t["squad"].append(curr_p)
                         break
+                else:
+                    st.session_state.unsold_pool.append(curr_p)
                 st.session_state.auction_index += 1
             st.rerun()
 
@@ -990,6 +1102,8 @@ elif st.session_state.game_stage == "auction":
                     assigned = random.choice(cb)
                     assigned["purse"] -= player["base_price"]
                     assigned["squad"].append(player)
+                else:
+                    st.session_state.unsold_pool.append(player)
             st.session_state.auction_index += 1
             st.session_state.current_bid = 0
             st.session_state.highest_bidder = None
@@ -1087,6 +1201,8 @@ elif st.session_state.game_stage == "dashboard":
         t for t in st.session_state.teams if t["team_name"] == opp_team_name
     ][0]
 
+    season_complete = st.session_state.match_day > len(st.session_state.tournament_schedule)
+
     with st.sidebar:
         st.markdown("<br/>", unsafe_allow_html=True)
 
@@ -1134,7 +1250,10 @@ elif st.session_state.game_stage == "dashboard":
                 unsafe_allow_html=True,
             )
 
-        for tab in ["Home", "Squad", "Schedule", "Table", "Stats"]:
+        nav_tabs = ["Home", "Squad", "Schedule", "Table", "Stats"]
+        if season_complete:
+            nav_tabs.append("Playoffs")
+        for tab in nav_tabs:
             if st.sidebar.button(tab, key=f"nav_btn_{tab}", use_container_width=True):
                 st.session_state.current_tab = tab
                 st.session_state.active_match_engine = {
@@ -1144,78 +1263,106 @@ elif st.session_state.game_stage == "dashboard":
                 }
                 st.rerun()
 
-    st.markdown(
-        f"""
-        <div class="scoreboard-strip">
-            <div>
-                <div class="sb-label">Matchday</div>
-                <div class="sb-value">{st.session_state.match_day} / {len(st.session_state.tournament_schedule)}</div>
-            </div>
-            <div>
-                <div class="sb-label">Format</div>
-                <div class="sb-value" style="color:var(--pitch);font-size:15px;">Double Round-Robin</div>
-            </div>
-            <div>
-                <div class="sb-label">Venue</div>
-                <div class="sb-value" style="color:var(--info);font-size:15px;">{st.session_state.current_venue['short']}</div>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    top_col_left, top_col_mid, top_col_right = st.columns([3, 1, 1])
-    with top_col_left:
+    if season_complete:
         st.markdown(
-            f"🆚 **{user_team['team_name']}** vs **{opponent_team['team_name']}**"
+            f"""
+            <div class="scoreboard-strip" style="border-left-color:var(--gold);">
+                <div>
+                    <div class="sb-label">League Phase</div>
+                    <div class="sb-value gold" style="color:var(--gold);">Complete</div>
+                </div>
+                <div>
+                    <div class="sb-label">Next Up</div>
+                    <div class="sb-value" style="color:var(--pitch);font-size:15px;">🏆 Playoffs</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
-    with top_col_mid:
-        if st.button("⏩ Sim Match", key="global_sim_match_action"):
-            simulate_league_background_matches(
-                user_team["team_name"], opponent_team["team_name"]
+        if st.session_state.current_tab != "Playoffs":
+            if st.button("🏆 Head to Playoffs", type="primary"):
+                st.session_state.current_tab = "Playoffs"
+                st.rerun()
+    else:
+        st.markdown(
+            f"""
+            <div class="scoreboard-strip">
+                <div>
+                    <div class="sb-label">Matchday</div>
+                    <div class="sb-value">{st.session_state.match_day} / {len(st.session_state.tournament_schedule)}</div>
+                </div>
+                <div>
+                    <div class="sb-label">Format</div>
+                    <div class="sb-value" style="color:var(--pitch);font-size:15px;">Double Round-Robin</div>
+                </div>
+                <div>
+                    <div class="sb-label">Venue</div>
+                    <div class="sb-value" style="color:var(--info);font-size:15px;">{st.session_state.current_venue['short']}</div>
+                </div>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        top_col_left, top_col_mid, top_col_right = st.columns([3, 1, 1])
+        with top_col_left:
+            st.markdown(
+                f"🆚 **{user_team['team_name']}** vs **{opponent_team['team_name']}**"
             )
-            sc1 = generate_detailed_scorecard(user_team, opponent_team)
-            sc2 = generate_detailed_scorecard(opponent_team, user_team)
-
-            if sc1["runs"] > sc2["runs"]:
-                user_team["points"] += 2
-                user_team["wins"] += 1
-                opponent_team["losses"] += 1
-                hl = (
-                    f"{user_team['team_name']} win Matchday"
-                    f" {st.session_state.match_day}"
+        with top_col_mid:
+            if st.button("⏩ Sim Match", key="global_sim_match_action"):
+                simulate_league_background_matches(
+                    user_team["team_name"], opponent_team["team_name"]
                 )
-            else:
-                opponent_team["points"] += 2
-                opponent_team["wins"] += 1
-                user_team["losses"] += 1
-                hl = (
-                    f"{opponent_team['team_name']} win Matchday"
-                    f" {st.session_state.match_day}"
-                )
+                sc1 = generate_detailed_scorecard(user_team, opponent_team)
+                sc2 = generate_detailed_scorecard(opponent_team, user_team)
+                potm = sc1["top_performer"] if sc1["runs"] >= sc2["runs"] else sc2["top_performer"]
 
-            st.session_state.match_history.append({
-                "type": "MATCH REPORT",
-                "date": f"Matchday {st.session_state.match_day}",
-                "headline": hl,
-                "body": "Simulated instantly across all league grounds.",
-                "scorecard": {
-                    "sc1": sc1,
-                    "sc2": sc2,
-                    "t1": user_team["team_name"],
-                    "t2": opponent_team["team_name"],
-                },
-            })
-            st.session_state.match_day += 1
-            st.rerun()
-    with top_col_right:
-        if st.button("▷ Play Match", key="global_play_match_action", type="primary"):
-            st.session_state.current_tab = "Match Engine"
-            st.session_state.active_match_engine = {
-                "state": "toss_phase",
-                "toss_winner": None,
-                "toss_decision": None,
-            }
-            st.rerun()
+                if sc1["runs"] > sc2["runs"]:
+                    user_team["points"] += 2
+                    user_team["wins"] += 1
+                    opponent_team["losses"] += 1
+                    hl = (
+                        f"{user_team['team_name']} win Matchday"
+                        f" {st.session_state.match_day}"
+                    )
+                else:
+                    opponent_team["points"] += 2
+                    opponent_team["wins"] += 1
+                    user_team["losses"] += 1
+                    hl = (
+                        f"{opponent_team['team_name']} win Matchday"
+                        f" {st.session_state.match_day}"
+                    )
+
+                st.session_state.match_history.append({
+                    "type": "MATCH REPORT",
+                    "date": f"Matchday {st.session_state.match_day}",
+                    "headline": hl,
+                    "body": (
+                        f"🏅 Player of the Match: {potm['name']} ({potm['line']})"
+                        if potm else "Simulated instantly across all league grounds."
+                    ),
+                    "scorecard": {
+                        "sc1": sc1,
+                        "sc2": sc2,
+                        "t1": user_team["team_name"],
+                        "t2": opponent_team["team_name"],
+                    },
+                })
+                st.session_state.match_day += 1
+                st.session_state.current_venue = random.choice(VENUES)
+                if st.session_state.match_day > len(st.session_state.tournament_schedule):
+                    st.session_state.current_tab = "Playoffs"
+                st.rerun()
+        with top_col_right:
+            if st.button("▷ Play Match", key="global_play_match_action", type="primary"):
+                st.session_state.current_tab = "Match Engine"
+                st.session_state.active_match_engine = {
+                    "state": "toss_phase",
+                    "toss_winner": None,
+                    "toss_decision": None,
+                }
+                st.rerun()
 
     st.markdown(
         "<div class='dashboard-transition-wrapper'>", unsafe_allow_html=True
@@ -1281,7 +1428,16 @@ elif st.session_state.game_stage == "dashboard":
 
         elif engine["state"] == "match_finished":
             sc1, sc2 = engine["sc1"], engine["sc2"]
+            potm = sc1["top_performer"] if sc1["runs"] >= sc2["runs"] else sc2["top_performer"]
             st.success("🏁 Match Concluded!")
+            if potm:
+                st.markdown(
+                    f"""<div class="headline-card" style="border-left-color:var(--gold);">
+                        <div class="h-date">🏅 Player of the Match</div>
+                        <div class="h-title">{potm['name']} — {potm['line']}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
             if st.button("💾 Finalize Results", use_container_width=True):
                 if sc1["runs"] > sc2["runs"]:
@@ -1302,7 +1458,10 @@ elif st.session_state.game_stage == "dashboard":
                     "type": "MATCH REPORT",
                     "date": f"Matchday {st.session_state.match_day}",
                     "headline": hl,
-                    "body": "Detailed ball-by-ball matrix completed.",
+                    "body": (
+                        f"🏅 Player of the Match: {potm['name']} ({potm['line']})"
+                        if potm else "Detailed ball-by-ball matrix completed."
+                    ),
                     "scorecard": {
                         "sc1": sc1,
                         "sc2": sc2,
@@ -1311,11 +1470,17 @@ elif st.session_state.game_stage == "dashboard":
                     },
                 })
                 st.session_state.match_day += 1
-                st.session_state.current_tab = "Home"
+                st.session_state.current_venue = random.choice(VENUES)
+                if st.session_state.match_day > len(st.session_state.tournament_schedule):
+                    st.session_state.current_tab = "Playoffs"
+                else:
+                    st.session_state.current_tab = "Home"
                 st.rerun()
 
             st.markdown("### 📊 Interactive Scorecard")
-            t1, t2 = st.tabs(["Innings 1 Overview", "Innings 2 Overview"])
+            t1, t2, t3 = st.tabs(
+                ["Innings 1 Overview", "Innings 2 Overview", "📻 Commentary"]
+            )
             with t1:
                 st.metric(
                     label="Innings 1",
@@ -1332,6 +1497,145 @@ elif st.session_state.game_stage == "dashboard":
                 )
                 st.dataframe(pd.DataFrame(sc2["batting"]), use_container_width=True)
                 st.dataframe(pd.DataFrame(sc2["bowling"]), use_container_width=True)
+            with t3:
+                st.caption("Key moments from both innings")
+                feed = sc1.get("commentary", []) + sc2.get("commentary", [])
+                if feed:
+                    for line in feed:
+                        st.markdown(
+                            f"""<div class="headline-card" style="padding:8px 12px;margin-bottom:5px;">
+                                <span style="font-family:'JetBrains Mono',monospace;">{line}</span>
+                            </div>""",
+                            unsafe_allow_html=True,
+                        )
+                else:
+                    st.info("A quiet match — no boundaries or wickets recorded.")
+
+    elif st.session_state.current_tab == "Playoffs":
+        st.header("🏆 IPL Playoffs")
+        po = st.session_state.playoffs
+        team_dict = {t["team_name"]: t for t in st.session_state.teams}
+
+        if po["stage"] is None:
+            ranked = sorted(
+                st.session_state.teams,
+                key=lambda t: (t["points"], t["wins"]),
+                reverse=True,
+            )
+            po["seeds"] = [t["team_name"] for t in ranked[:4]]
+            po["stage"] = "Q1"
+            st.rerun()
+
+        seeds = po["seeds"]
+        st.markdown("### 🎟️ Top 4 Seeds")
+        seed_cols = st.columns(4)
+        for i, name in enumerate(seeds):
+            with seed_cols[i]:
+                st.markdown(
+                    f"""<div class="stat-card">
+                        <div class="stat-label">Seed {i+1}</div>
+                        <div class="stat-value" style="font-size:16px;">{name}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+
+        def _play_playoff(team1_name, team2_name, stage_label):
+            t1, t2 = team_dict[team1_name], team_dict[team2_name]
+            sc1 = generate_detailed_scorecard(t1, t2)
+            sc2 = generate_detailed_scorecard(t2, t1)
+            winner = team1_name if sc1["runs"] > sc2["runs"] else team2_name
+            loser = team2_name if winner == team1_name else team1_name
+            po["log"].append({
+                "stage": stage_label,
+                "team1": team1_name, "team2": team2_name,
+                "score1": f"{sc1['runs']}/{sc1['wickets']}",
+                "score2": f"{sc2['runs']}/{sc2['wickets']}",
+                "winner": winner,
+            })
+            return winner, loser
+
+        st.markdown("---")
+
+        if po["stage"] == "Q1":
+            st.markdown(f"### ⚔️ Qualifier 1: {seeds[0]} vs {seeds[1]}")
+            st.caption("Winner goes straight to the Final. Loser gets another shot in Qualifier 2.")
+            if st.button("▶ Simulate Qualifier 1", type="primary"):
+                winner, loser = _play_playoff(seeds[0], seeds[1], "Qualifier 1")
+                po["final_a"] = winner
+                po["q1_loser"] = loser
+                po["stage"] = "ELIM"
+                st.rerun()
+
+        elif po["stage"] == "ELIM":
+            st.markdown(f"### ⚔️ Eliminator: {seeds[2]} vs {seeds[3]}")
+            st.caption("Loser is out of the tournament. Winner meets the Qualifier 1 loser next.")
+            if st.button("▶ Simulate Eliminator", type="primary"):
+                winner, loser = _play_playoff(seeds[2], seeds[3], "Eliminator")
+                po["elim_winner"] = winner
+                po["stage"] = "Q2"
+                st.rerun()
+
+        elif po["stage"] == "Q2":
+            st.markdown(f"### ⚔️ Qualifier 2: {po['q1_loser']} vs {po['elim_winner']}")
+            st.caption("Winner takes the last spot in the Final.")
+            if st.button("▶ Simulate Qualifier 2", type="primary"):
+                winner, _ = _play_playoff(po["q1_loser"], po["elim_winner"], "Qualifier 2")
+                po["final_b"] = winner
+                po["stage"] = "FINAL"
+                st.rerun()
+
+        elif po["stage"] == "FINAL":
+            st.markdown(f"### 🏆 FINAL: {po['final_a']} vs {po['final_b']}")
+            if st.button("▶ Simulate Final", type="primary"):
+                winner, _ = _play_playoff(po["final_a"], po["final_b"], "Final")
+                po["champion"] = winner
+                po["stage"] = "DONE"
+                st.rerun()
+
+        elif po["stage"] == "DONE":
+            st.markdown(
+                f"""<div class="stat-card" style="text-align:center;border-top:3px solid var(--gold);">
+                    <div class="stat-label">🏆 Champions</div>
+                    <div class="stat-value gold" style="font-size:32px;">{po['champion']}</div>
+                </div>""",
+                unsafe_allow_html=True,
+            )
+            st.markdown("### 🎖️ Season Awards")
+            award_cols = st.columns(2)
+            with award_cols[0]:
+                if st.session_state.stats_runs:
+                    top_bat = max(st.session_state.stats_runs.items(), key=lambda x: x[1])
+                    st.markdown(
+                        f"""<div class="stat-card">
+                            <div class="stat-label">🟠 Orange Cap</div>
+                            <div class="stat-value" style="font-size:18px;">{top_bat[0]}</div>
+                            <div style="color:var(--text-dim);font-size:13px;">{top_bat[1]} runs</div>
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
+            with award_cols[1]:
+                if st.session_state.stats_wickets:
+                    top_bowl = max(st.session_state.stats_wickets.items(), key=lambda x: x[1])
+                    st.markdown(
+                        f"""<div class="stat-card">
+                            <div class="stat-label">🟣 Purple Cap</div>
+                            <div class="stat-value" style="font-size:18px;">{top_bowl[0]}</div>
+                            <div style="color:var(--text-dim);font-size:13px;">{top_bowl[1]} wickets</div>
+                        </div>""",
+                        unsafe_allow_html=True,
+                    )
+
+        if po["log"]:
+            st.markdown("### 📜 Playoff Results")
+            for entry in po["log"]:
+                st.markdown(
+                    f"""<div class="headline-card">
+                        <div class="h-date">{entry['stage']}</div>
+                        <div class="h-title">{entry['team1']} {entry['score1']} vs
+                            {entry['team2']} {entry['score2']} — 🏆 {entry['winner']}</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
 
     elif st.session_state.current_tab == "Home":
         sorted_teams = sorted(
@@ -1464,6 +1768,75 @@ elif st.session_state.game_stage == "dashboard":
                 </div>""",
                 unsafe_allow_html=True,
             )
+
+        st.markdown("---")
+        st.markdown("### 🔁 Transfer Market")
+        st.caption(
+            "Release players you don't need, or sign free agents from the"
+            " unsold pool. Changes apply immediately — remember to update your"
+            " Playing XI above if you release someone in it."
+        )
+        tm_col1, tm_col2 = st.columns(2)
+
+        with tm_col1:
+            st.markdown("**Release a Player**")
+            if squad:
+                release_name = st.selectbox(
+                    "Choose a squad player to release",
+                    options=[p["name"] for p in squad],
+                    key="release_player_select",
+                )
+                if st.button("🚮 Release Player", use_container_width=True):
+                    released = name_to_player[release_name]
+                    user_team["squad"] = [
+                        p for p in user_team["squad"] if p["name"] != release_name
+                    ]
+                    user_team["playing_11"] = [
+                        p for p in user_team.get("playing_11", []) if p["name"] != release_name
+                    ]
+                    if (
+                        user_team.get("impact_player")
+                        and user_team["impact_player"]["name"] == release_name
+                    ):
+                        user_team["impact_player"] = None
+                    st.session_state.unsold_pool.append(released)
+                    st.success(f"{release_name} released to the free agent pool.")
+                    st.rerun()
+            else:
+                st.info("Your squad is empty.")
+
+        with tm_col2:
+            st.markdown("**Sign a Free Agent**")
+            if st.session_state.unsold_pool:
+                fa_options = {
+                    f"{p['name']} ({p['role']}) — ₹{p['base_price']/100:.2f} CR": p
+                    for p in st.session_state.unsold_pool
+                }
+                fa_label = st.selectbox(
+                    "Available free agents", options=list(fa_options.keys()), key="fa_select"
+                )
+                fa_player = fa_options[fa_label]
+                can_afford = user_team["purse"] >= fa_player["base_price"]
+                has_space = len(user_team["squad"]) < 20
+                if not has_space:
+                    st.warning("Squad is full (20 players).")
+                elif not can_afford:
+                    st.warning("Not enough purse remaining.")
+                if st.button(
+                    "✅ Sign Player",
+                    use_container_width=True,
+                    disabled=not (can_afford and has_space),
+                ):
+                    user_team["purse"] -= fa_player["base_price"]
+                    user_team["squad"].append(fa_player)
+                    st.session_state.unsold_pool = [
+                        p for p in st.session_state.unsold_pool if p["name"] != fa_player["name"]
+                    ]
+                    st.success(f"Signed {fa_player['name']}!")
+                    st.rerun()
+                st.caption(f"Your purse: ₹{user_team['purse']/100:.2f} CR")
+            else:
+                st.info("No free agents available right now.")
 
     elif st.session_state.current_tab == "Schedule":
         st.subheader("🗓️ Complete Double Round-Robin Fixtures (18 Match Days)")
