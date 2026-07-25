@@ -1,5 +1,4 @@
 import random
-import time
 import pandas as pd
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
@@ -447,9 +446,11 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         runs_scored = 0
         fours = 0
         sixes = 0
+        got_out = False
         for _ in range(balls_faced):
             ball_roll = random.random()
             if ball_roll < (0.05 + (100 - ability) * 0.0015):
+                got_out = True
                 break  # Wicket
             elif ball_roll < 0.45:
                 runs_scored += 1
@@ -471,7 +472,7 @@ def generate_detailed_scorecard(batting_team, bowling_team):
         )
         batting_performance.append({
             "name": b["name"],
-            "status": "Out" if random.random() > 0.3 else "Not Out",
+            "status": "Out" if got_out else "Not Out",
             "runs": runs_scored,
             "balls": balls_faced,
             "fours": fours,
@@ -521,6 +522,10 @@ def simulate_league_background_matches(user_team_name, opp_team_name):
     if st.session_state.match_day > len(st.session_state.tournament_schedule):
         return
 
+    # Guard against re-simulating the same matchday's background fixtures twice
+    if st.session_state.get("bg_simulated_day") == st.session_state.match_day:
+        return
+
     day_idx = st.session_state.match_day - 1
     fixtures = st.session_state.tournament_schedule[day_idx]
     team_dict = {t["team_name"]: t for t in st.session_state.teams}
@@ -545,6 +550,8 @@ def simulate_league_background_matches(user_team_name, opp_team_name):
             t2["points"] += 2
             t2["wins"] += 1
             t1["losses"] += 1
+
+    st.session_state.bg_simulated_day = st.session_state.match_day
 
 
 # --- STAGE 1: SETUP ---
@@ -674,7 +681,11 @@ elif st.session_state.game_stage == "auction":
             ):
                 curr_idx = st.session_state.auction_index
                 curr_p = st.session_state.player_pool[curr_idx]
-                for t in st.session_state.teams:
+                # Shuffle team order per player so no single team (e.g. the
+                # first human team) always wins every contested pick.
+                shuffled_teams = st.session_state.teams[:]
+                random.shuffle(shuffled_teams)
+                for t in shuffled_teams:
                     if len(t["squad"]) < 20 and t["purse"] >= curr_p["base_price"]:
                         t["purse"] -= curr_p["base_price"]
                         t["squad"].append(curr_p)
@@ -749,7 +760,8 @@ elif st.session_state.game_stage == "auction":
         eligible_humans = [
             t
             for t in human_teams
-            if t["purse"] >= (st.session_state.current_bid + 50)
+            if len(t["squad"]) < 20
+            and t["purse"] >= (st.session_state.current_bid + 50)
         ]
 
         if eligible_humans:
@@ -812,6 +824,29 @@ elif st.session_state.game_stage == "dashboard":
 
     with st.sidebar:
         st.markdown("<br/>", unsafe_allow_html=True)
+
+        if len(human_squads) > 1:
+            manager_labels = [
+                f"{t.get('manager', 'Manager')} ({t['team_name']})"
+                for t in human_squads
+            ]
+            picked_label = st.selectbox(
+                "🎮 Viewing dashboard as:",
+                options=manager_labels,
+                index=st.session_state.selected_human_idx,
+                key="human_manager_switcher",
+            )
+            new_idx = manager_labels.index(picked_label)
+            if new_idx != st.session_state.selected_human_idx:
+                st.session_state.selected_human_idx = new_idx
+                st.session_state.current_tab = "Home"
+                st.session_state.active_match_engine = {
+                    "state": "idle",
+                    "toss_winner": None,
+                    "toss_decision": None,
+                }
+                st.rerun()
+
         if user_team:
             st.markdown(f"### 🛡️ {user_team['team_name']}")
             st.caption(f"Manager: {user_team.get('manager', 'Franchise Owner')}")
