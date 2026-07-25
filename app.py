@@ -662,6 +662,197 @@ def get_form_offset(form_string):
     mapping = {"Slumping": -4, "Steady": 0, "Good": 2, "Red-Hot": 5}
     return mapping.get(form_string, 0)
 
+# ============================================================
+# SMART AI MANAGER SYSTEM
+# ============================================================
+AI_MIN_SQUAD_SIZE = 11
+AI_MAX_SQUAD_SIZE = 20
+AI_MIN_PURSE_RESERVE = 500
+
+
+def ai_role_counts(team):
+    counts = {"Batsman": 0, "Bowler": 0, "All-Rounder": 0, "Wicket-Keeper": 0}
+    for player in team.get("squad", []):
+        if player.get("role") in counts:
+            counts[player["role"]] += 1
+    return counts
+
+
+def ai_team_needs(team):
+    counts = ai_role_counts(team)
+    needs = {"Batsman": 0, "Bowler": 0, "All-Rounder": 0, "Wicket-Keeper": 0}
+    if counts["Batsman"] < 5: needs["Batsman"] += 35
+    if counts["Bowler"] < 5: needs["Bowler"] += 40
+    if counts["All-Rounder"] < 2: needs["All-Rounder"] += 25
+    if counts["Wicket-Keeper"] < 1: needs["Wicket-Keeper"] += 50
+    if counts["Batsman"] < 7: needs["Batsman"] += 10
+    if counts["Bowler"] < 7: needs["Bowler"] += 10
+    if counts["Wicket-Keeper"] < 2: needs["Wicket-Keeper"] += 10
+    return needs
+
+
+def ai_player_value(team, player, venue=None):
+    role = player.get("role")
+    if role == "Batsman":
+        value = player.get("batting_rating", 50)
+    elif role == "Bowler":
+        value = player.get("bowling_rating", 50)
+    elif role == "All-Rounder":
+        value = player.get("batting_rating", 50) * 0.55 + player.get("bowling_rating", 50) * 0.45
+    elif role == "Wicket-Keeper":
+        value = player.get("batting_rating", 50) + 8
+    else:
+        value = 50
+
+    value += ai_team_needs(team).get(role, 0) * 0.75
+    if role == "All-Rounder": value += 8
+    if role == "Wicket-Keeper" and ai_role_counts(team)["Wicket-Keeper"] == 0: value += 25
+
+    if venue:
+        if venue.get("boost_role") == role:
+            value += venue.get("boost_amount", 0) * 1.5
+        elif venue.get("boost_role") == "Balanced" and role == "All-Rounder":
+            value += 6
+
+    if player.get("age", 30) <= 24: value += 5
+    value += get_form_offset(player.get("form", "Steady")) * 0.75
+    return round(value, 2)
+
+
+def ai_personality_multiplier(team, player):
+    personality = team.get("personality", "Balanced")
+    role = player.get("role")
+    if personality == "Batting-Heavy":
+        if role in ["Batsman", "Wicket-Keeper"]: return 1.20
+        if role == "All-Rounder": return 1.08
+        return 0.88
+    if personality == "Bowling-Heavy":
+        if role == "Bowler": return 1.20
+        if role == "All-Rounder": return 1.12
+        return 0.90
+    if personality == "Youth-Focus":
+        if player.get("age", 30) <= 24: return 1.25
+        if player.get("age", 30) >= 32: return 0.85
+    return 1.0
+
+
+def ai_max_bid(team, player, venue=None):
+    if len(team.get("squad", [])) >= AI_MAX_SQUAD_SIZE:
+        return 0
+    available_budget = max(0, team.get("purse", 0) - AI_MIN_PURSE_RESERVE)
+    if available_budget <= 0:
+        return 0
+    strategic_value = ai_player_value(team, player, venue) * ai_personality_multiplier(team, player)
+    max_bid = strategic_value * 22
+    if player.get("batting_rating", 0) >= 90: max_bid += 250
+    if player.get("bowling_rating", 0) >= 90: max_bid += 250
+    if ai_team_needs(team).get(player.get("role"), 0) >= 50: max_bid += 250
+    if strategic_value < 55: max_bid *= 0.70
+    return int(min(max_bid, available_budget))
+
+
+def ai_should_bid(team, player, current_bid, venue=None):
+    if len(team.get("squad", [])) >= AI_MAX_SQUAD_SIZE:
+        return False
+    max_bid = ai_max_bid(team, player, venue)
+    if current_bid + 50 > max_bid:
+        return False
+    if team.get("purse", 0) < current_bid + 50:
+        return False
+    if len(team.get("squad", [])) < AI_MIN_SQUAD_SIZE:
+        if ai_team_needs(team).get(player.get("role"), 0) < 20:
+            return False
+    return True
+
+
+def ai_live_auction_action(player):
+    current_bid = st.session_state.current_bid
+    venue = st.session_state.get("current_venue")
+    candidates = []
+    for team in st.session_state.teams:
+        if team.get("is_human"):
+            continue
+        if st.session_state.highest_bidder and team["team_name"] == st.session_state.highest_bidder["team_name"]:
+            continue
+        if ai_should_bid(team, player, current_bid, venue):
+            candidates.append(team)
+    if not candidates:
+        return False
+    candidates.sort(key=lambda t: ai_max_bid(t, player, venue) + random.randint(-40, 40), reverse=True)
+    team = candidates[0]
+    st.session_state.current_bid += 50
+    st.session_state.highest_bidder = team
+    st.session_state.timer_seconds = 4
+    st.session_state.log_msg = f"🧠 {team['team_name']} bids ₹{st.session_state.current_bid / 100:.2f} CR for {player['name']}"
+    return True
+
+
+def ai_choose_fast_track_team(player):
+    venue = st.session_state.get("current_venue")
+    candidates = [
+        t for t in st.session_state.teams
+        if not t.get("is_human") and len(t.get("squad", [])) < AI_MAX_SQUAD_SIZE
+        and t.get("purse", 0) >= player.get("base_price", 0)
+        and ai_max_bid(t, player, venue) >= player.get("base_price", 0)
+    ]
+    if not candidates:
+        return None
+    candidates.sort(key=lambda t: ai_player_value(t, player, venue) + random.random(), reverse=True)
+    return candidates[0]
+
+
+def ai_build_playing_xi(team, venue=None):
+    squad = team.get("squad", [])
+    if len(squad) <= 11:
+        team["playing_11"] = squad.copy()
+        team["impact_player"] = None
+        team["tactic"] = ai_choose_tactic(team, venue)
+        return
+
+    selected = []
+    def add_best(role, count):
+        players = sorted([p for p in squad if p.get("role") == role], key=lambda p: ai_player_value(team, p, venue), reverse=True)
+        for p in players[:count]:
+            if p not in selected: selected.append(p)
+
+    add_best("Wicket-Keeper", 1)
+    add_best("Batsman", 4)
+    add_best("Bowler", 4)
+    add_best("All-Rounder", 2)
+
+    remaining = sorted([p for p in squad if p not in selected], key=lambda p: ai_player_value(team, p, venue), reverse=True)
+    for p in remaining:
+        if len(selected) >= 11: break
+        selected.append(p)
+
+    team["playing_11"] = selected[:11]
+    leftovers = [p for p in squad if p not in team["playing_11"]]
+    team["impact_player"] = max(leftovers, key=lambda p: ai_player_value(team, p, venue)) if leftovers else None
+    team["tactic"] = ai_choose_tactic(team, venue)
+
+
+def ai_choose_tactic(team, venue=None):
+    xi = team.get("playing_11", [])
+    bat_strength = sum(p.get("batting_rating", 0) for p in xi)
+    bowl_strength = sum(p.get("bowling_rating", 0) for p in xi)
+    if venue and venue.get("boost_role") == "Batsman": return "Aggressive Powerplay Batting"
+    if venue and venue.get("boost_role") == "Bowler": return "Spin & Bowling Control"
+    if venue and venue.get("boost_role") == "All-Rounder": return "Maximum Tactical Flexibility"
+    if bat_strength > bowl_strength + 80: return "Batting Dominance"
+    if bowl_strength > bat_strength + 80: return "Bowling Fortress"
+    if sum(1 for p in xi if p.get("role") == "All-Rounder") >= 3: return "Flexible All-Rounder Rotation"
+    return "Balanced Alignment"
+
+
+def ai_choose_toss_decision(team, opponent, venue=None):
+    if venue:
+        if venue.get("boost_role") == "Batsman": return "Bat First"
+        if venue.get("boost_role") == "Bowler": return "Bowl First"
+    team_bat = sum(p.get("batting_rating", 0) for p in team.get("playing_11", []))
+    team_bowl = sum(p.get("bowling_rating", 0) for p in team.get("playing_11", []))
+    opponent_bat = sum(p.get("batting_rating", 0) for p in opponent.get("playing_11", []))
+    return "Bowl First" if team_bowl > opponent_bat else "Bat First"
+
 
 # --- SIMULATOR MATRIX USING BAT / BOWL DUAL RATINGS ---
 def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
@@ -1013,17 +1204,16 @@ elif st.session_state.game_stage == "auction":
     if idx >= len(player_pool):
         st.success("Draft Concluded! Setting up league grids...")
         for t in st.session_state.teams:
-            sorted_squad = sorted(
-                t["squad"],
-                key=lambda x: max(x["batting_rating"], x["bowling_rating"]),
-                reverse=True,
-            )
-            t["playing_11"] = (
-                sorted_squad[:11] if len(sorted_squad) >= 11 else sorted_squad
-            )
-            t["impact_player"] = (
-                sorted_squad[11] if len(sorted_squad) > 11 else None
-            )
+            if not t.get("is_human"):
+                ai_build_playing_xi(t, st.session_state.get("current_venue"))
+            else:
+                sorted_squad = sorted(
+                    t["squad"],
+                    key=lambda x: max(x["batting_rating"], x["bowling_rating"]),
+                    reverse=True,
+                )
+                t["playing_11"] = sorted_squad[:11] if len(sorted_squad) >= 11 else sorted_squad
+                t["impact_player"] = sorted_squad[11] if len(sorted_squad) > 11 else None
         st.session_state.game_stage = "dashboard"
         st.rerun()
     else:
@@ -1049,43 +1239,29 @@ elif st.session_state.game_stage == "auction":
             ):
                 curr_idx = st.session_state.auction_index
                 curr_p = st.session_state.player_pool[curr_idx]
-                # Shuffle team order per player so no single team (e.g. the
-                # first human team) always wins every contested pick.
-                shuffled_teams = st.session_state.teams[:]
-                random.shuffle(shuffled_teams)
-                for t in shuffled_teams:
-                    if len(t["squad"]) < 20 and t["purse"] >= curr_p["base_price"]:
-                        t["purse"] -= curr_p["base_price"]
-                        t["squad"].append(curr_p)
-                        break
+                # Smart AI fast-track: value the player against team needs.
+                ai_team = ai_choose_fast_track_team(curr_p)
+                if ai_team:
+                    ai_team["purse"] -= curr_p["base_price"]
+                    ai_team["squad"].append(curr_p)
                 else:
-                    st.session_state.unsold_pool.append(curr_p)
+                    human_candidates = [
+                        t for t in st.session_state.teams
+                        if t.get("is_human") and len(t["squad"]) < 20 and t["purse"] >= curr_p["base_price"]
+                    ]
+                    if human_candidates:
+                        assigned = min(human_candidates, key=lambda t: len(t["squad"]))
+                        assigned["purse"] -= curr_p["base_price"]
+                        assigned["squad"].append(curr_p)
+                    else:
+                        st.session_state.unsold_pool.append(curr_p)
                 st.session_state.auction_index += 1
             st.rerun()
 
         if st.session_state.timer_seconds > 0:
             st.session_state.timer_seconds -= 1
-            bots = [
-                t
-                for t in st.session_state.teams
-                if not t["is_human"]
-                and len(t["squad"]) < 20
-                and t["purse"] >= (st.session_state.current_bid + 50)
-            ]
-            if bots and random.random() < 0.45:
-                valid_bots = [
-                    b
-                    for b in bots
-                    if not st.session_state.highest_bidder
-                    or b["team_name"]
-                    != st.session_state.highest_bidder["team_name"]
-                ]
-                if valid_bots:
-                    counter_bot = random.choice(valid_bots)
-                    st.session_state.current_bid += 50
-                    st.session_state.highest_bidder = counter_bot
-                    st.session_state.timer_seconds = 4
-                    st.rerun()
+            if ai_live_auction_action(player):
+                st.rerun()
         else:
             if st.session_state.highest_bidder:
                 st.session_state.highest_bidder["purse"] -= (
@@ -1093,13 +1269,14 @@ elif st.session_state.game_stage == "auction":
                 )
                 st.session_state.highest_bidder["squad"].append(player)
             else:
-                cb = [
-                    t
-                    for t in st.session_state.teams
-                    if len(t["squad"]) < 20 and t["purse"] >= player["base_price"]
-                ]
-                if cb:
-                    assigned = random.choice(cb)
+                assigned = ai_choose_fast_track_team(player)
+                if assigned is None:
+                    cb = [
+                        t for t in st.session_state.teams
+                        if len(t["squad"]) < 20 and t["purse"] >= player["base_price"]
+                    ]
+                    assigned = min(cb, key=lambda t: len(t["squad"])) if cb else None
+                if assigned:
                     assigned["purse"] -= player["base_price"]
                     assigned["squad"].append(player)
                 else:
@@ -1383,8 +1560,10 @@ elif st.session_state.game_stage == "dashboard":
                     engine["state"] = "toss_decision_human"
                 else:
                     engine["toss_winner"] = opponent_team["team_name"]
-                    engine["toss_decision"] = random.choice(
-                        ["Bat First", "Bowl First"]
+                    engine["toss_decision"] = ai_choose_toss_decision(
+                        opponent_team,
+                        user_team,
+                        st.session_state.get("current_venue"),
                     )
                     engine["state"] = "toss_complete"
                 st.rerun()
