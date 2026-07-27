@@ -849,23 +849,30 @@ def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
                 "fours": 0,
                 "sixes": 0,
                 "sr": 0.0,
+                "form": b.get("form", "Steady"),
             })
             continue
 
-        ability = b["batting_rating"] + get_form_offset(b.get("form", "Steady"))
+        pre_innings_form = b.get("form", "Steady")
+        ability = b["batting_rating"] + get_form_offset(pre_innings_form)
         if boost_role in (b.get("role"), "Balanced") and boost_role == b.get("role"):
             ability += boost_amount
-        balls_faced = (
+        target_balls = (
             random.randint(3, 25) if ability < 50 else random.randint(10, 35)
         )
         if idx < 4 and ability >= 75:
-            balls_faced = random.randint(18, 45)
+            target_balls = random.randint(18, 45)
+        # Never let one batter's innings claim more deliveries than remain
+        # in the 120-ball innings budget.
+        target_balls = min(target_balls, max(0, 120 - balls_tracked))
 
         runs_scored = 0
         fours = 0
         sixes = 0
         got_out = False
-        for _ in range(balls_faced):
+        actual_balls_faced = 0
+        for _ in range(target_balls):
+            actual_balls_faced += 1
             ball_roll = random.random()
             if ball_roll < (0.05 + (100 - ability) * 0.0015):
                 got_out = True
@@ -885,8 +892,11 @@ def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
                 commentary.append(f"🟣 SIX! {b['name']} launches it into the stands")
 
         total_runs += runs_scored
-        balls_tracked += balls_faced
-        sr = round((runs_scored / max(1, balls_faced)) * 100, 1)
+        # Only the balls actually bowled to this batter count against the
+        # innings' 120-ball budget — a batter dismissed early shouldn't
+        # silently "use up" deliveries they never faced.
+        balls_tracked += actual_balls_faced
+        sr = round((runs_scored / max(1, actual_balls_faced)) * 100, 1)
 
         st.session_state.stats_runs[b["name"]] = (
             st.session_state.stats_runs.get(b["name"], 0) + runs_scored
@@ -895,10 +905,11 @@ def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
             "name": b["name"],
             "status": "Out" if got_out else "Not Out",
             "runs": runs_scored,
-            "balls": balls_faced,
+            "balls": actual_balls_faced,
             "fours": fours,
             "sixes": sixes,
             "sr": sr,
+            "form": pre_innings_form,
         })
         if batting_performance[-1]["status"] == "Out":
             total_wickets += 1
@@ -919,10 +930,11 @@ def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
     wickets_remaining = total_wickets
     for idx, bwl in enumerate(bowlers):
         overs = 4
+        pre_spell_form = bwl.get("form", "Steady")
         runs_conceded = random.randint(18, 45) - int(
             (bwl["bowling_rating"] - 75) * 0.35
         )
-        runs_conceded -= get_form_offset(bwl.get("form", "Steady"))
+        runs_conceded -= get_form_offset(pre_spell_form)
         if boost_role == bwl.get("role"):
             runs_conceded -= boost_amount
         runs_conceded = max(12, runs_conceded)
@@ -940,6 +952,7 @@ def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
             "runs": runs_conceded,
             "wickets": wkt,
             "econ": round(runs_conceded / overs, 2),
+            "form": pre_spell_form,
         })
         if wkt > 0:
             commentary.append(f"🟢 {bwl['name']} strikes! {wkt}-wicket over")
@@ -1923,6 +1936,12 @@ elif st.session_state.game_stage == "dashboard":
 
         st.markdown("---")
         st.markdown("### 📋 Full Squad")
+        form_colors = {
+            "Red-Hot": "var(--gold)",
+            "Good": "var(--pitch)",
+            "Steady": "var(--text-dim)",
+            "Slumping": "var(--danger)",
+        }
         for p in squad:
             if p["name"] in selected_names:
                 tag = '<span class="pill pill-xi">XI</span>'
@@ -1930,11 +1949,18 @@ elif st.session_state.game_stage == "dashboard":
                 tag = '<span class="pill pill-impact">Impact</span>'
             else:
                 tag = ""
+            form_val = p.get("form", "Steady")
+            form_color = form_colors.get(form_val, "var(--text-dim)")
+            form_badge = (
+                f'<span class="p-role" style="color:{form_color};'
+                f'font-weight:600;">● {form_val}</span>'
+            )
             st.markdown(
                 f"""<div class="player-row">
                     <div>
                         <span class="p-name">{p['name']}</span>{tag}
                         <span class="p-role">{p['role']}</span>
+                        {form_badge}
                     </div>
                     <div class="p-ratings">BAT {p['batting_rating']} · BOWL {p['bowling_rating']}</div>
                 </div>""",
