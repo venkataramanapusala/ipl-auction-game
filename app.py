@@ -343,6 +343,10 @@ if "selected_human_idx" not in st.session_state:
     st.session_state.selected_human_idx = 0
 if "pending_trade_offers" not in st.session_state:
     st.session_state.pending_trade_offers = []
+if "season_number" not in st.session_state:
+    st.session_state.season_number = 1
+if "hall_of_fame" not in st.session_state:
+    st.session_state.hall_of_fame = []
 
 
 # --- GENERATE DOUBLE ROUND-ROBIN FIXTURES ---
@@ -663,6 +667,30 @@ st.markdown(
 def get_form_offset(form_string):
     mapping = {"Slumping": -4, "Steady": 0, "Good": 2, "Red-Hot": 5}
     return mapping.get(form_string, 0)
+
+
+def batting_outcome_weights(ability):
+    """Map batting ability (~20-110) to a dot/1/2/4/6 weight split, so a
+    high-rated aggressive batter actually strikes at a higher rate than a
+    tail-ender, instead of both drawing from the same fixed odds.
+
+    agg=0 (weak/anchor) -> weights sum to 100, expected SR ~110-120
+    agg=1 (elite/explosive) -> weights sum to 100, expected SR ~220+
+    """
+    agg = max(0.0, min(1.0, (ability - 30) / 70))
+    w_dot = 40 - 22 * agg
+    w_one = 38 - 3 * agg
+    w_two = 10 + 3 * agg
+    w_four = 8 + 10 * agg
+    w_six = 4 + 12 * agg
+    total = w_dot + w_one + w_two + w_four + w_six
+    return {
+        "dot": w_dot / total,
+        "one": w_one / total,
+        "two": w_two / total,
+        "four": w_four / total,
+        "six": w_six / total,
+    }
 
 # ============================================================
 # SMART AI MANAGER SYSTEM
@@ -1008,6 +1036,149 @@ def finalize_draw_effects(team_a, team_b, all_teams):
     charge_matchday_wages(all_teams)
 
 
+# ============================================================
+# MULTI-SEASON CAREERS: AGING, RETIREMENT & TROPHY CABINET
+# ============================================================
+
+YOUTH_FIRST_NAMES = [
+    "Arjun", "Kabir", "Rehan", "Dev", "Ayaan", "Vihaan", "Krish", "Rudra",
+    "Zayn", "Ishaan", "Aarav", "Vivaan", "Kian", "Reyansh", "Advait",
+]
+YOUTH_LAST_NAMES = [
+    "Mehta", "Nair", "Bhatt", "Chauhan", "Iyer", "Rawat", "Solanki", "Verma",
+    "Gill", "Menon", "Kulkarni", "Bora", "Shetty", "Pillai", "Trivedi",
+]
+
+
+def age_and_develop_player(player):
+    """Advance a player one season: young players improve, veterans decline."""
+    player["age"] = player.get("age", 25) + 1
+    if player["age"] <= 23:
+        growth = random.randint(1, 3)
+        player["batting_rating"] = min(99, player.get("batting_rating", 50) + growth)
+        player["bowling_rating"] = min(99, player.get("bowling_rating", 50) + growth)
+    elif player["age"] >= 34:
+        decline = random.randint(1, 4)
+        player["batting_rating"] = max(20, player.get("batting_rating", 50) - decline)
+        player["bowling_rating"] = max(20, player.get("bowling_rating", 50) - decline)
+    # Season-only state resets for the fresh campaign.
+    player["form"] = "Steady"
+    player["injury_type"] = None
+    player["injury_status"] = "Fit"
+    player["injury_matches_remaining"] = 0
+
+
+def player_should_retire(player):
+    age = player.get("age", 25)
+    if age >= 42:
+        return True
+    if age >= 36:
+        return random.random() < 0.12 * (age - 35)
+    return False
+
+
+def generate_youth_prospect():
+    role = random.choice(["Batsman", "Bowler", "All-Rounder", "Wicket-Keeper"])
+    base = random.randint(58, 76)
+    return {
+        "name": f"{random.choice(YOUTH_FIRST_NAMES)} {random.choice(YOUTH_LAST_NAMES)}",
+        "role": role,
+        "batting_rating": (
+            base + random.randint(-5, 8) if role in ("Batsman", "All-Rounder", "Wicket-Keeper")
+            else random.randint(10, 25)
+        ),
+        "bowling_rating": (
+            base + random.randint(-5, 8) if role in ("Bowler", "All-Rounder")
+            else random.randint(5, 20)
+        ),
+        "base_price": random.choice([20, 20, 20, 30]),
+        "age": random.randint(18, 21),
+    }
+
+
+def start_new_season():
+    """Crown the champion, age/retire the player pool, refresh the draft
+    board with youth prospects, and reset league state for a fresh season."""
+    # Bank career totals onto each player before the season stats reset.
+    all_current_players = []
+    for t in st.session_state.teams:
+        all_current_players.extend(t["squad"])
+    all_current_players.extend(st.session_state.unsold_pool)
+    name_lookup = {p["name"]: p for p in all_current_players}
+    for name, runs in st.session_state.stats_runs.items():
+        if name in name_lookup:
+            name_lookup[name]["career_runs"] = name_lookup[name].get("career_runs", 0) + runs
+    for name, wkts in st.session_state.stats_wickets.items():
+        if name in name_lookup:
+            name_lookup[name]["career_wickets"] = name_lookup[name].get("career_wickets", 0) + wkts
+
+    # Trophy for the champion franchise.
+    champion_name = st.session_state.playoffs.get("champion")
+    for t in st.session_state.teams:
+        if t["team_name"] == champion_name:
+            t.setdefault("trophies", []).append(st.session_state.season_number)
+
+    # Age every player, develop youth, decline veterans, and retire the old guard.
+    retired_this_season = []
+    for t in st.session_state.teams:
+        survivors = []
+        for p in t["squad"]:
+            age_and_develop_player(p)
+            if player_should_retire(p):
+                retired_this_season.append({
+                    "name": p["name"],
+                    "team": t["team_name"],
+                    "final_age": p["age"],
+                    "career_runs": p.get("career_runs", 0),
+                    "career_wickets": p.get("career_wickets", 0),
+                    "season": st.session_state.season_number,
+                })
+            else:
+                survivors.append(p)
+        t["squad"] = survivors
+        t["playing_11"] = []
+        t["impact_player"] = None
+
+    st.session_state.hall_of_fame.extend(retired_this_season)
+
+    # Refresh the free-agent pool: age/retire leftovers, then top up with youth.
+    st.session_state.unsold_pool = [
+        p for p in st.session_state.unsold_pool if not player_should_retire(p)
+    ]
+    for p in st.session_state.unsold_pool:
+        age_and_develop_player(p)
+    prospect_count = max(10, len(retired_this_season) + 5)
+    st.session_state.unsold_pool.extend(
+        generate_youth_prospect() for _ in range(prospect_count)
+    )
+
+    # Reset season-level team state; carry squads, purses (with a top-up), and morale.
+    for t in st.session_state.teams:
+        t["points"] = 0
+        t["wins"] = 0
+        t["losses"] = 0
+        t["morale"] = int(clamp((t.get("morale", 75) + 75) / 2, 50, 90))
+        t["purse"] = t.get("purse", 0) + 3000
+        t["last_wage_tax"] = 0
+        t["nrr"] = 0.00
+
+    st.session_state.stats_runs = {}
+    st.session_state.stats_wickets = {}
+    st.session_state.match_history = []
+    st.session_state.pending_trade_offers = []
+    st.session_state.tournament_schedule = generate_double_round_robin_schedule(
+        st.session_state.teams
+    )
+    st.session_state.match_day = 1
+    st.session_state.bg_simulated_day = None
+    st.session_state.playoffs = {"stage": None, "seeds": [], "log": [], "champion": None}
+    st.session_state.current_venue = random.choice(VENUES)
+    st.session_state.season_number += 1
+    st.session_state.current_tab = "Home"
+
+    return retired_this_season
+
+
 # --- SIMULATOR MATRIX USING BAT / BOWL DUAL RATINGS ---
 def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
     """Generate a coherent T20 scorecard: batting runs, wickets, balls and
@@ -1079,29 +1250,39 @@ def generate_detailed_scorecard(batting_team, bowling_team, venue=None):
         got_out = False
         balls_faced = 0
 
+        wicket_chance = clamp(0.085 - (ability - 70) * 0.0007, 0.025, 0.12)
+        outcome = batting_outcome_weights(ability)
+        # Cumulative thresholds within the (1 - wicket_chance) remaining mass,
+        # so a higher-ability/aggressive batter draws far more boundaries and
+        # far fewer dot balls than a tail-ender, instead of everyone sharing
+        # the same fixed odds.
+        cum_dot = wicket_chance + (1 - wicket_chance) * outcome["dot"]
+        cum_one = cum_dot + (1 - wicket_chance) * outcome["one"]
+        cum_two = cum_one + (1 - wicket_chance) * outcome["two"]
+        cum_four = cum_two + (1 - wicket_chance) * outcome["four"]
+
         for _ in range(target_balls):
             balls_faced += 1
             roll = random.random()
-            wicket_chance = clamp(0.085 - (ability - 70) * 0.0007, 0.025, 0.12)
             if roll < wicket_chance:
                 got_out = True
                 total_wickets += 1
                 commentary.append(f"🔴 OUT! {batter['name']} departs for {runs_scored}")
                 break
-            elif roll < 0.47:
+            elif roll < cum_dot:
+                runs_scored += 0
+            elif roll < cum_one:
                 runs_scored += 1
-            elif roll < 0.62:
+            elif roll < cum_two:
                 runs_scored += 2
-            elif roll < 0.76:
+            elif roll < cum_four:
                 runs_scored += 4
                 fours += 1
                 commentary.append(f"🔵 FOUR! {batter['name']} finds the gap")
-            elif roll < 0.86:
+            else:
                 runs_scored += 6
                 sixes += 1
                 commentary.append(f"🟣 SIX! {batter['name']} launches it into the stands")
-            else:
-                runs_scored += 0
 
         total_runs += runs_scored
         balls_tracked += balls_faced
@@ -1261,6 +1442,7 @@ SAVE_STATE_KEYS = [
     "current_tab", "active_match_engine", "tournament_schedule", "match_day",
     "current_venue", "bg_simulated_day", "playoffs", "unsold_pool",
     "selected_human_idx", "timer_seconds", "pending_trade_offers",
+    "season_number", "hall_of_fame",
 ]
 
 
@@ -1338,6 +1520,7 @@ if st.session_state.game_stage == "setup":
                 "morale": 80,
                 "nrr": 0.00,
                 "last_wage_tax": 0,
+                "trophies": [],
             })
         for bot_team in [t for t in TEAM_NAMES_POOL if t not in used_teams]:
             teams.append({
@@ -1356,6 +1539,7 @@ if st.session_state.game_stage == "setup":
                 "morale": 75,
                 "nrr": 0.00,
                 "last_wage_tax": 0,
+                "trophies": [],
             })
 
         st.session_state.teams = teams
@@ -1610,7 +1794,7 @@ elif st.session_state.game_stage == "dashboard":
                 unsafe_allow_html=True,
             )
 
-        nav_tabs = ["Home", "Squad", "Trades", "Schedule", "Table", "Stats"]
+        nav_tabs = ["Home", "Squad", "Trades", "Schedule", "Table", "Stats", "Legacy"]
         if season_complete:
             nav_tabs.append("Playoffs")
         for tab in nav_tabs:
@@ -1647,6 +1831,10 @@ elif st.session_state.game_stage == "dashboard":
         st.markdown(
             f"""
             <div class="scoreboard-strip">
+                <div>
+                    <div class="sb-label">Season</div>
+                    <div class="sb-value" style="color:var(--gold);">{st.session_state.season_number}</div>
+                </div>
                 <div>
                     <div class="sb-label">Matchday</div>
                     <div class="sb-value">{st.session_state.match_day} / {len(st.session_state.tournament_schedule)}</div>
@@ -2003,6 +2191,31 @@ elif st.session_state.game_stage == "dashboard":
                         </div>""",
                         unsafe_allow_html=True,
                     )
+
+            st.markdown("---")
+            st.markdown("### 🚀 Ready for Next Year?")
+            st.caption(
+                "Starting a new season ages every player a year (young players"
+                " develop, veterans decline and some retire), tops up every"
+                " purse, clears injuries/form, and generates a fresh"
+                " double round-robin schedule. Your squads carry over."
+            )
+            if st.button(
+                f"🏆 Start Season {st.session_state.season_number + 1}",
+                type="primary",
+                use_container_width=True,
+            ):
+                retired = start_new_season()
+                if retired:
+                    names = ", ".join(r["name"] for r in retired[:8])
+                    more = f" (+{len(retired) - 8} more)" if len(retired) > 8 else ""
+                    st.session_state.match_history.append({
+                        "type": "RETIREMENT",
+                        "date": f"Season {st.session_state.season_number - 1} Offseason",
+                        "headline": f"{len(retired)} player(s) retired: {names}{more}",
+                        "body": "The offseason claims another generation of stars.",
+                    })
+                st.rerun()
 
         if po["log"]:
             st.markdown("### 📜 Playoff Results")
@@ -2362,4 +2575,63 @@ elif st.session_state.game_stage == "dashboard":
             ):
                 st.write(f"**{idx+1}. {name}** — {wck} wickets")
 
+    elif st.session_state.current_tab == "Legacy":
+        st.subheader(f"🏛️ Franchise Legacy — Season {st.session_state.season_number}")
+
+        st.markdown("### 🏆 Trophy Cabinet")
+        trophy_rows = sorted(
+            (
+                {"Team": t["team_name"], "Titles": len(t.get("trophies", [])),
+                 "Seasons Won": ", ".join(str(s) for s in t.get("trophies", [])) or "—"}
+                for t in st.session_state.teams
+            ),
+            key=lambda x: x["Titles"], reverse=True,
+        )
+        st.table(pd.DataFrame(trophy_rows))
+
+        st.markdown("### 🎖️ Career Leaderboards")
+        all_squad_players = []
+        for t in st.session_state.teams:
+            all_squad_players.extend(t["squad"])
+        all_squad_players.extend(st.session_state.unsold_pool)
+
+        col_cr, col_cw = st.columns(2)
+        with col_cr:
+            st.markdown("**Career Runs (active players)**")
+            top_career_runs = sorted(
+                [p for p in all_squad_players if p.get("career_runs", 0) > 0],
+                key=lambda p: p.get("career_runs", 0), reverse=True,
+            )[:10]
+            if top_career_runs:
+                for idx, p in enumerate(top_career_runs):
+                    st.write(f"**{idx+1}. {p['name']}** — {p.get('career_runs', 0)} runs")
+            else:
+                st.caption("No completed seasons yet.")
+        with col_cw:
+            st.markdown("**Career Wickets (active players)**")
+            top_career_wkts = sorted(
+                [p for p in all_squad_players if p.get("career_wickets", 0) > 0],
+                key=lambda p: p.get("career_wickets", 0), reverse=True,
+            )[:10]
+            if top_career_wkts:
+                for idx, p in enumerate(top_career_wkts):
+                    st.write(f"**{idx+1}. {p['name']}** — {p.get('career_wickets', 0)} wickets")
+            else:
+                st.caption("No completed seasons yet.")
+
+        st.markdown("### 🕯️ Hall of Fame — Retired Legends")
+        if st.session_state.hall_of_fame:
+            for legend in reversed(st.session_state.hall_of_fame[-15:]):
+                st.markdown(
+                    f"""<div class="headline-card" style="border-left-color:var(--gold);">
+                        <div class="h-date">Retired after Season {legend.get('season', '?')} · {legend['team']}</div>
+                        <div class="h-title">{legend['name']} (age {legend['final_age']}) —
+                            {legend.get('career_runs', 0)} career runs, {legend.get('career_wickets', 0)} career wickets</div>
+                    </div>""",
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("No retirements yet — the current generation of stars is still going strong.")
+
     st.markdown("</div>", unsafe_allow_html=True)
+    
