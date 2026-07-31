@@ -2634,4 +2634,3 @@ elif st.session_state.game_stage == "dashboard":
             st.info("No retirements yet — the current generation of stars is still going strong.")
 
     st.markdown("</div>", unsafe_allow_html=True)
-    
